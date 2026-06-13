@@ -9,6 +9,8 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from . import config  # noqa: F401 — loads .env before env vars are read
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles

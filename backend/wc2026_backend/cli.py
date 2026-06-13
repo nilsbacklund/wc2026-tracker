@@ -6,12 +6,19 @@
     python -m wc2026_backend add-result A B 2 1 [--ko WINNER] [--minute 60] [--live]
     python -m wc2026_backend resim [N]
     python -m wc2026_backend show            # latest odds table
+    python -m wc2026_backend migrate         # run SQL migrations on Supabase
+
+With SUPABASE_DB_URL set (e.g. in .env) every command targets Supabase
+Postgres; otherwise a local SQLite db. --db forces a specific SQLite path.
 """
 import argparse
+import os
 import sys
 
+from . import config  # noqa: F401 — loads .env on import
 from .fixtures import seed_matches
 from .store import Store
+from .store_factory import get_store
 from . import service
 
 
@@ -32,6 +39,27 @@ def _show(store, top=16):
               f"{p['qf']:>7.1f}{p['r16']:>7.1f}{p['advance']:>7.1f}")
 
 
+def _migrate():
+    """Run supabase/migrations/*.sql against SUPABASE_DB_URL (Postgres)."""
+    dsn = os.environ.get("SUPABASE_DB_URL")
+    if not dsn:
+        sys.exit("SUPABASE_DB_URL not set (put it in .env)")
+    try:
+        import psycopg
+    except ImportError:
+        sys.exit("psycopg not installed — run: uv pip install -e '.[supabase]'")
+    from pathlib import Path
+    mig_dir = Path(__file__).resolve().parents[2] / "supabase" / "migrations"
+    files = sorted(mig_dir.glob("*.sql"))
+    if not files:
+        sys.exit(f"no migrations in {mig_dir}")
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        for f in files:
+            conn.execute(f.read_text())
+            print(f"applied {f.name}")
+    print(f"migrated {len(files)} file(s)")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="wc2026_backend")
     parser.add_argument("--db", default=None, help="SQLite path")
@@ -41,6 +69,7 @@ def main(argv=None):
     sub.add_parser("import-elo")
     sub.add_parser("fetch")
     sub.add_parser("show")
+    sub.add_parser("migrate")
     p_resim = sub.add_parser("resim")
     p_resim.add_argument("n", nargs="?", type=int, default=20000)
     p_add = sub.add_parser("add-result")
@@ -56,11 +85,18 @@ def main(argv=None):
                        help="mark in_play instead of finished")
 
     args = parser.parse_args(argv)
-    store = Store(args.db) if args.db else Store()
+
+    if args.cmd == "migrate":
+        _migrate()
+        return
+
+    store = Store(args.db) if args.db else get_store()
+    backend = type(store).__name__
 
     if args.cmd == "init":
         seed_matches(store)
-        print(f"seeded {len(store.all_matches())} matches into {store.path}")
+        where = getattr(store, "path", backend)
+        print(f"seeded {len(store.all_matches())} matches into {where}")
     elif args.cmd == "import-elo":
         ratings = service.import_elo(store)
         print(f"imported {len(ratings)} Elo ratings from eloratings.net")
