@@ -124,11 +124,15 @@ class SupabaseStore:
         if since:
             q += " WHERE ts >= %s"
             args = (since,)
-        q += " ORDER BY ts"
+        q += " ORDER BY id"  # insertion order (= match order for a rebuild)
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute(q, args)
             rows = self._rows(cur)
         return [_snapshot_row(r) for r in rows]
+
+    def clear_snapshots(self):
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("DELETE FROM snapshots")
 
     # --- engine bridge ---
     def engine_state(self):

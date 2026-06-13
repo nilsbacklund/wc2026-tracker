@@ -8,6 +8,7 @@
     python -m wc2026_backend show            # latest odds table
     python -m wc2026_backend migrate         # run SQL migrations on Supabase
     python -m wc2026_backend backfill        # ingest all match days so far
+    python -m wc2026_backend rebuild-history # one odds snapshot per played match
 
 With SUPABASE_DB_URL set (e.g. in .env) every command targets Supabase
 Postgres; otherwise a local SQLite db. --db forces a specific SQLite path.
@@ -71,6 +72,7 @@ def main(argv=None):
     sub.add_parser("fetch")
     sub.add_parser("show")
     sub.add_parser("migrate")
+    sub.add_parser("rebuild-history")
     p_backfill = sub.add_parser("backfill")
     p_backfill.add_argument("--start", default=service.TOURNAMENT_START)
     p_backfill.add_argument("--end", default=None)
@@ -143,6 +145,10 @@ def main(argv=None):
     elif args.cmd == "resim":
         out = service.resimulate(store, n=args.n, trigger="manual")
         print(f"snapshot #{out['snapshot_id']} ({args.n} sims)")
+        _show(store)
+    elif args.cmd == "rebuild-history":
+        count = service.rebuild_history(store)
+        print(f"rebuilt history: 1 baseline + {count} per-match snapshots")
         _show(store)
     elif args.cmd == "show":
         _show(store)

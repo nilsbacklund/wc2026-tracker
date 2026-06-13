@@ -85,6 +85,53 @@ def backfill_espn(store, start=TOURNAMENT_START, end=None):
     return changed
 
 
+def _state_with(all_matches, known_ids):
+    """Engine state where only matches in `known_ids` are finished; the rest
+    are scheduled. Mirrors store.engine_state()'s per-match shape."""
+    out = []
+    for m in all_matches:
+        e = {"id": m["id"], "stage": m["stage"], "group": m["grp"],
+             "home": m["home"], "away": m["away"], "minute": None}
+        if m["id"] in known_ids and m["home_score"] is not None:
+            e["status"] = "finished"
+            e["score"] = {"home": m["home_score"], "away": m["away_score"]}
+            if m["stage"] != "group":
+                e["ko"] = {"winner": m["ko_winner"],
+                           "decided_by": m["ko_decided_by"]}
+        else:
+            e["status"] = "scheduled"
+        out.append(e)
+    return {"matches": out}
+
+
+def rebuild_history(store, n=20000):
+    """Replace the snapshot history with one snapshot per played match.
+
+    Replays finished matches in chronological (kickoff) order: a pre-tournament
+    baseline, then a snapshot conditioned on the cumulative results after each
+    match. This powers the "odds over the played matches" chart. Uses the
+    current Elo ratings throughout (the historical odds trajectory is driven by
+    result conditioning; ratings are a small secondary effect). A fixed seed
+    keeps Monte Carlo noise consistent between adjacent points.
+    """
+    spec = spec_from_store(store)
+    all_matches = store.all_matches()
+    finished = [m for m in all_matches
+                if m["status"] == "finished" and m["home_score"] is not None]
+    finished.sort(key=lambda m: (m["kickoff_utc"] or "", m["id"]))
+
+    store.clear_snapshots()
+    known = set()
+    res = run_sims(spec=spec, state=_state_with(all_matches, known), n=n, seed=2026)
+    store.add_snapshot(res["probs"], n, "pretournament", None)
+    for m in finished:
+        known.add(m["id"])
+        res = run_sims(spec=spec, state=_state_with(all_matches, known),
+                       n=n, seed=2026)
+        store.add_snapshot(res["probs"], n, "fulltime", m["id"])
+    return len(finished)
+
+
 def apply_elo_updates(store):
     """Apply Elo updates for finished matches not yet applied. Idempotent."""
     applied = store.elo_applied_match_ids()

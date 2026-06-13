@@ -96,7 +96,7 @@ export default function App() {
 
       <section className="panel">
         <h2>{t.raceTitle}</h2>
-        <RaceChart history={history} latest={latest} mode={mode} />
+        <RaceChart history={history} latest={latest} matches={matches} mode={mode} />
       </section>
 
       <section className="panel">

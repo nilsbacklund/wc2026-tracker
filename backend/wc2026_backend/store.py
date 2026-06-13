@@ -157,8 +157,13 @@ class Store:
         if since:
             q += " WHERE ts >= ?"
             args = (since,)
-        q += " ORDER BY ts"
+        q += " ORDER BY id"  # insertion order (= match order for a rebuild)
         return [_snapshot_row(r) for r in self.conn.execute(q, args)]
+
+    def clear_snapshots(self):
+        with self._lock:
+            self.conn.execute("DELETE FROM snapshots")
+            self.conn.commit()
 
     # --- engine bridge ---
     def engine_state(self):
