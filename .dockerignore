@@ -1,0 +1,36 @@
+# Python
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Local DB / generated state (production state lives in Supabase)
+data/*.sqlite
+data/*.sqlite-*
+
+# Frontend — rebuilt inside the image; never ship host artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+
+# Tests are not needed in the runtime image
+tests/
+
+# VCS / tooling / docs / assets
+.git/
+.gitignore
+.github/
+.playwright-mcp/
+.DS_Store
+docs/
+*.png
+*.md
+fly.toml
+railway.json
+Procfile
+Dockerfile
+.dockerignore

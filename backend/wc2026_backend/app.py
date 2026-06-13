@@ -5,6 +5,7 @@ what-if endpoint runs the engine live with caller-supplied Elo overrides and
 hypothetical results — never persisted. The live polling loop is started on
 startup (see live.py).
 """
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from wc2026.simulate import run_sims
 from wc2026.structure import GROUPS, GROUP_LETTERS, TEAMS
 
 from .store import Store
+from .live import LivePoller
 from . import service, standings_view
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
@@ -24,8 +26,16 @@ FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.store = Store()
+    try:
+        from .store_factory import get_store
+        app.state.store = get_store()
+    except ImportError:
+        app.state.store = Store()
+    app.state.poller = LivePoller(app.state.store)
+    if not os.getenv("WC2026_DISABLE_POLLER"):
+        await app.state.poller.start()
     yield
+    await app.state.poller.stop()
     app.state.store.close()
 
 
@@ -61,6 +71,19 @@ def odds_history(since: str | None = None, team: str | None = None):
 @app.get("/api/matches")
 def matches():
     return {"matches": store().all_matches()}
+
+
+@app.get("/api/live")
+def live():
+    """Matches currently in play, from the store."""
+    return {"matches": [m for m in store().all_matches()
+                        if m["status"] == "in_play"]}
+
+
+@app.post("/api/poll")
+async def poll():
+    """Run one poll cycle now (manual/cron trigger). Returns the result."""
+    return await app.state.poller.poll_once()
 
 
 @app.get("/api/standings")

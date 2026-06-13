@@ -26,6 +26,15 @@ export const fetchTeamHistory = (team: string) =>
 export const fetchHistory = () =>
   get<{ snapshots: Snapshot[] }>("/odds/history").then((d) => d.snapshots);
 
+export interface TeamInfo {
+  name: string;
+  group: string;
+  elo: number | null;
+}
+
+export const fetchTeams = () =>
+  get<{ teams: TeamInfo[] }>("/teams").then((d) => d.teams);
+
 export interface SimRequest {
   elo_overrides?: Record<string, number>;
   n_sims?: number;

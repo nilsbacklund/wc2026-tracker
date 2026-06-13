@@ -1,0 +1,45 @@
+# Fly.io configuration for the WC2026 live odds tracker.
+# Rename `app` to your own unique Fly app name (or run `fly launch --no-deploy`
+# to have Fly fill it in). Deploy with `fly deploy`.
+
+app = "wc2026-tracker"
+primary_region = "iad"   # change to a region near you / near match coverage
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  # Non-secret runtime defaults. Secrets (SUPABASE_DB_URL, FOOTBALL_DATA_TOKEN)
+  # are set with `fly secrets set` — see docs/DEPLOY.md.
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # IMPORTANT: keep at least one machine running so the background ESPN poller
+  # keeps re-simulating during live matches. If auto_stop stopped the only
+  # machine between requests, polling would stop too. See docs/DEPLOY.md.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  # Health check hits "/" (the served frontend), which returns 200 as soon as
+  # the app is up. Avoid "/api/odds/latest" here: it 404s until the first
+  # snapshot is generated, which would fail the deploy on a fresh DB.
+  [[http_service.checks]]
+    method = "get"
+    path = "/"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpus = 1

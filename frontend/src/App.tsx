@@ -12,6 +12,8 @@ import { GroupStandings } from "./components/GroupStandings";
 import { MatchList } from "./components/MatchList";
 import { RaceChart } from "./components/RaceChart";
 import { SwedenPanel } from "./components/SwedenPanel";
+import { SwedenDeepDive } from "./components/SwedenDeepDive";
+import { WhatIf } from "./components/WhatIf";
 
 // Poll interval — a local stand-in for Supabase Realtime, which will push
 // snapshot rows in production. Swapping this for a realtime subscription
@@ -84,7 +86,14 @@ export default function App() {
         </button>
       </header>
 
-      {swedenFirst && <SwedenPanel snapshot={latest} matches={matches} />}
+      {swedenFirst && (
+        <>
+          <SwedenPanel snapshot={latest} matches={matches} />
+          <SwedenDeepDive snapshot={latest} matches={matches} />
+        </>
+      )}
+
+      <WhatIf snapshot={latest} mode={mode} />
 
       <section className="panel">
         <h2>{t.raceTitle}</h2>
