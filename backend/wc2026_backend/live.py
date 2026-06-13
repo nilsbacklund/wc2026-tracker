@@ -60,6 +60,21 @@ class LivePoller:
             self._task = None
 
     async def _run(self):
+        # One-time catch-up: ESPN's default scoreboard only returns today, so
+        # on (re)start walk every past match day to ingest results that landed
+        # while we were down. Idempotent — only genuine changes re-simulate.
+        try:
+            changed = await asyncio.to_thread(service.backfill_espn, self.store)
+            if changed:
+                await asyncio.to_thread(service.apply_elo_updates, self.store)
+                await asyncio.to_thread(
+                    service.resimulate, self.store, trigger="scheduled")
+                log.info("startup backfill updated %d matches", len(changed))
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("startup backfill failed")
+
         while True:
             try:
                 await self.poll_once()

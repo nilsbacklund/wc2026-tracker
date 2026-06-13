@@ -52,6 +52,39 @@ def ingest_espn(store, events=None):
     return changed
 
 
+TOURNAMENT_START = "2026-06-11"
+
+
+def _date_range(start, end):
+    """List of YYYYMMDD strings from start to end (inclusive), ISO dates in."""
+    from datetime import date, timedelta
+    d0 = date.fromisoformat(start)
+    d1 = date.fromisoformat(end)
+    out = []
+    while d0 <= d1:
+        out.append(d0.strftime("%Y%m%d"))
+        d0 += timedelta(days=1)
+    return out
+
+
+def backfill_espn(store, start=TOURNAMENT_START, end=None):
+    """Ingest every match day from `start` to `end` (default today, UTC).
+
+    ESPN's default scoreboard only returns the current day, so a fresh deploy
+    mid-tournament must walk past dates to pick up already-played results.
+    Returns the combined list of changed match ids.
+    """
+    from datetime import datetime, timezone
+    end = end or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    changed = []
+    for d in _date_range(start, end):
+        try:
+            changed.extend(ingest_espn(store, espn.fetch_scoreboard(date=d)))
+        except Exception:
+            continue  # a bad day shouldn't abort the whole backfill
+    return changed
+
+
 def apply_elo_updates(store):
     """Apply Elo updates for finished matches not yet applied. Idempotent."""
     applied = store.elo_applied_match_ids()

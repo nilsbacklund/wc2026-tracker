@@ -7,6 +7,7 @@
     python -m wc2026_backend resim [N]
     python -m wc2026_backend show            # latest odds table
     python -m wc2026_backend migrate         # run SQL migrations on Supabase
+    python -m wc2026_backend backfill        # ingest all match days so far
 
 With SUPABASE_DB_URL set (e.g. in .env) every command targets Supabase
 Postgres; otherwise a local SQLite db. --db forces a specific SQLite path.
@@ -70,6 +71,9 @@ def main(argv=None):
     sub.add_parser("fetch")
     sub.add_parser("show")
     sub.add_parser("migrate")
+    p_backfill = sub.add_parser("backfill")
+    p_backfill.add_argument("--start", default=service.TOURNAMENT_START)
+    p_backfill.add_argument("--end", default=None)
     p_resim = sub.add_parser("resim")
     p_resim.add_argument("n", nargs="?", type=int, default=20000)
     p_add = sub.add_parser("add-result")
@@ -124,6 +128,15 @@ def main(argv=None):
         updated = service.apply_elo_updates(store)
         if updated:
             print(f"Elo updated for matches {updated}")
+        out = service.resimulate(store, trigger="scheduled")
+        print(f"snapshot #{out['snapshot_id']}")
+        _show(store)
+    elif args.cmd == "backfill":
+        changed = service.backfill_espn(store, args.start, args.end)
+        print(f"backfill: {len(changed)} matches changed {sorted(changed)}")
+        updated = service.apply_elo_updates(store)
+        if updated:
+            print(f"Elo updated for matches {sorted(updated)}")
         out = service.resimulate(store, trigger="scheduled")
         print(f"snapshot #{out['snapshot_id']}")
         _show(store)
