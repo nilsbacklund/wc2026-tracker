@@ -15,6 +15,11 @@ node_modules/
 frontend/dist/
 frontend/*.tsbuildinfo
 
+# Env files (keep .env.example tracked)
+.env
+.env.local
+!.env.example
+
 # Tooling
 .DS_Store
 .playwright-mcp/

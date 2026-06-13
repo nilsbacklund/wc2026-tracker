@@ -14,11 +14,12 @@ import { RaceChart } from "./components/RaceChart";
 import { SwedenPanel } from "./components/SwedenPanel";
 import { SwedenDeepDive } from "./components/SwedenDeepDive";
 import { WhatIf } from "./components/WhatIf";
+import { subscribeToSnapshots } from "./realtime";
 
-// Poll interval — a local stand-in for Supabase Realtime, which will push
-// snapshot rows in production. Swapping this for a realtime subscription
-// later touches only this hook.
-const POLL_MS = 20000;
+// When Supabase Realtime is configured, snapshot inserts push instantly and we
+// poll only as a slow safety net. Without it, polling is the live mechanism.
+const POLL_FAST_MS = 20000;
+const POLL_BACKUP_MS = 120000;
 
 export default function App() {
   const [mode, setMode] = useState<Mode>(
@@ -57,10 +58,14 @@ export default function App() {
       }
     };
     load();
-    const id = setInterval(load, POLL_MS);
+    // Realtime pushes a refetch on every new snapshot; polling is the backup
+    // (slow when Realtime is live, fast when it isn't).
+    const unsubscribe = subscribeToSnapshots(load);
+    const id = setInterval(load, unsubscribe ? POLL_BACKUP_MS : POLL_FAST_MS);
     return () => {
       active = false;
       clearInterval(id);
+      unsubscribe?.();
     };
   }, []);
 

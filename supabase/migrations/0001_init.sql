@@ -55,5 +55,32 @@ CREATE INDEX IF NOT EXISTS idx_snapshots_ts ON snapshots (ts);
 
 -- The frontend subscribes to new odds snapshots over Supabase Realtime.
 -- Publishing inserts on `snapshots` lets the dashboard update live after a
--- re-simulation. (No-op outside Supabase; safe to omit on a vanilla Postgres.)
-alter publication supabase_realtime add table snapshots;
+-- re-simulation. Guarded so the migration is idempotent.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'snapshots'
+  ) then
+    alter publication supabase_realtime add table snapshots;
+  end if;
+exception
+  when undefined_object then null;  -- publication absent on vanilla Postgres
+end $$;
+
+-- Supabase Realtime delivers postgres_changes only for rows the subscribing
+-- role can SELECT under RLS. Snapshots are public, read-only odds, so allow
+-- the anon key to read them; the backend writes via a direct DB connection
+-- (SUPABASE_DB_URL), which bypasses RLS. Without this policy the browser
+-- subscribes successfully but never receives INSERT events.
+alter table snapshots enable row level security;
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where tablename = 'snapshots' and policyname = 'public read snapshots'
+  ) then
+    create policy "public read snapshots" on snapshots
+      for select to anon using (true);
+  end if;
+end $$;
