@@ -3,7 +3,7 @@
 # to have Fly fill it in). Deploy with `fly deploy`.
 
 app = "wc2026-tracker"
-primary_region = "iad"   # change to a region near you / near match coverage
+primary_region = "arn"   # Stockholm — near the audience; ~Ireland for Supabase
 
 [build]
   dockerfile = "Dockerfile"

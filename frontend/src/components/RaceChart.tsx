@@ -16,9 +16,10 @@ import { flag } from "../flags";
 
 ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Tooltip, Legend);
 
+// Distinct line colors; Sweden always gets the theme yellow.
 const COLORS = [
-  "#ffcd00", "#4a9eff", "#ff5c5c", "#46d39a", "#c77dff",
-  "#ff9f40", "#36cfd1", "#f06595",
+  "#5b8cff", "#f06595", "#46d39a", "#c77dff",
+  "#ff9f40", "#36cfd1", "#ffd000", "#9aa7c2",
 ];
 
 interface Props {
@@ -29,9 +30,13 @@ interface Props {
 
 export function RaceChart({ history, latest, mode }: Props) {
   const t = STRINGS[mode];
+  // Theme-aware axis/legend colors (read once per render from CSS vars).
+  const css = getComputedStyle(document.documentElement);
+  const muted = css.getPropertyValue("--muted").trim() || "#9aa7c2";
+  const text = css.getPropertyValue("--text").trim() || "#eef2fb";
+  const gridColor = "rgba(255,255,255,0.06)";
 
   const data = useMemo(() => {
-    // Top 6 by current champ%, plus Sweden in Sverigeläge.
     const ranked = Object.keys(latest.probs).sort(
       (a, b) => latest.probs[b].champ - latest.probs[a].champ,
     );
@@ -45,37 +50,56 @@ export function RaceChart({ history, latest, mode }: Props) {
           x: new Date(s.ts).getTime(),
           y: s.probs[team]?.champ ?? null,
         })),
-        borderColor: team === "Sweden" ? "#ffcd00" : COLORS[i % COLORS.length],
-        backgroundColor: "transparent",
+        borderColor: team === "Sweden" ? "#ffd000" : COLORS[i % COLORS.length],
+        backgroundColor: team === "Sweden" ? "#ffd000" : COLORS[i % COLORS.length],
         borderWidth: team === "Sweden" ? 3 : 2,
-        tension: 0.25,
-        pointRadius: history.length <= 2 ? 3 : 0,
+        tension: 0.3,
+        // Always show points so a 2-3 snapshot history is still legible.
+        pointRadius: history.length <= 6 ? 3 : 0,
+        pointHoverRadius: 5,
       })),
     };
   }, [history, latest, mode]);
 
+  // Need at least two snapshots for a meaningful line.
   if (history.length < 2) {
     return <p className="loading">{t.noHistory}</p>;
   }
 
   return (
-    <Line
-      data={data}
-      options={{
-        responsive: true,
-        interaction: { mode: "nearest", intersect: false },
-        scales: {
-          x: { type: "time", ticks: { color: "#8b98a5" }, grid: { display: false } },
-          y: {
-            title: { display: true, text: `${t.champion} %`, color: "#8b98a5" },
-            ticks: { color: "#8b98a5" },
-            grid: { color: "rgba(255,255,255,0.05)" },
+    <div className="chart-wrap">
+      <Line
+        data={data}
+        options={{
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "nearest", intersect: false },
+          scales: {
+            x: {
+              type: "time",
+              time: { tooltipFormat: "PPp" },
+              ticks: { color: muted, maxRotation: 0, autoSkipPadding: 20 },
+              grid: { display: false },
+            },
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: `${t.champion} %`, color: muted },
+              ticks: { color: muted, callback: (v) => `${v}%` },
+              grid: { color: gridColor },
+            },
           },
-        },
-        plugins: {
-          legend: { labels: { color: "#e6edf3", usePointStyle: true } },
-        },
-      }}
-    />
+          plugins: {
+            legend: {
+              labels: { color: text, usePointStyle: true, boxWidth: 8 },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(1)}%`,
+              },
+            },
+          },
+        }}
+      />
+    </div>
   );
 }

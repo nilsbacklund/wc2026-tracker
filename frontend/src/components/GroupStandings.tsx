@@ -20,7 +20,7 @@ export function GroupStandings({ groups, mode }: Props) {
   return (
     <div className="grid">
       {keys.map((g) => (
-        <div key={g}>
+        <div key={g} className="group-card">
           <strong>
             {t.group} {g}
           </strong>

@@ -11,7 +11,6 @@ import { OddsTable } from "./components/OddsTable";
 import { GroupStandings } from "./components/GroupStandings";
 import { MatchList } from "./components/MatchList";
 import { RaceChart } from "./components/RaceChart";
-import { SwedenPanel } from "./components/SwedenPanel";
 import { SwedenDeepDive } from "./components/SwedenDeepDive";
 import { WhatIf } from "./components/WhatIf";
 import { subscribeToSnapshots } from "./realtime";
@@ -91,12 +90,7 @@ export default function App() {
         </button>
       </header>
 
-      {swedenFirst && (
-        <>
-          <SwedenPanel snapshot={latest} matches={matches} />
-          <SwedenDeepDive snapshot={latest} matches={matches} />
-        </>
-      )}
+      {swedenFirst && <SwedenDeepDive snapshot={latest} matches={matches} />}
 
       <WhatIf snapshot={latest} mode={mode} />
 

@@ -1,28 +1,56 @@
+/* ============================================================
+   Color system. Two themes via [data-mode]; everything below
+   references these variables so the palette is centralized.
+   ============================================================ */
 :root {
-  --bg: #0f1419;
-  --panel: #1a2129;
-  --panel-2: #222c36;
-  --text: #e6edf3;
-  --muted: #8b98a5;
-  --border: #2d3742;
-  --accent: #4a9eff;
-  --accent-soft: #1e3a5f;
-  --live: #ff5c5c;
+  /* Neutral (default) — modern slate with a vivid indigo/blue accent */
+  --bg: #0b1020;
+  --bg-grad-1: #0d1326;
+  --bg-grad-2: #0a0e1a;
+  --panel: #161d33;
+  --panel-2: #1f2843;
+  --panel-hover: #222c4a;
+  --text: #eef2fb;
+  --muted: #9aa7c2;
+  --border: #2b3553;
+  --border-strong: #3d4a70;
+  --accent: #5b8cff;
+  --accent-2: #8b5bff;
+  --accent-soft: #233056;
+  --accent-contrast: #ffffff;
+  --pos: #34d399;
+  --neg: #fb7185;
+  --live: #ff5470;
   --highlight: transparent;
+  --bar-from: #3a5cc7;
+  --bar-to: #5b8cff;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Sverigeläge: blue/yellow, Sweden rows highlighted */
+/* Sverigeläge — deep Sweden blue with a bright golden-yellow accent */
 [data-mode="sv"] {
-  --bg: #0a1929;
-  --panel: #102a43;
-  --panel-2: #143656;
-  --text: #f0f6ff;
-  --muted: #9db4cc;
-  --border: #1d4267;
-  --accent: #ffcd00; /* Swedish yellow */
-  --accent-soft: #15436b;
-  --highlight: rgba(255, 205, 0, 0.12);
+  --bg: #051427;
+  --bg-grad-1: #07203c;
+  --bg-grad-2: #04101f;
+  --panel: #0c2748;
+  --panel-2: #123a63;
+  --panel-hover: #16436f;
+  --text: #f0f7ff;
+  --muted: #a6c2e0;
+  --border: #1d4a7a;
+  --border-strong: #2c6098;
+  --accent: #ffd000;
+  --accent-2: #ffe45e;
+  --accent-soft: #14406d;
+  --accent-contrast: #06182e;
+  --pos: #46e0a0;
+  --neg: #ff8aa0;
+  --live: #ff5470;
+  --highlight: rgba(255, 208, 0, 0.13);
+  --bar-from: #1b5fa3;
+  --bar-to: #ffd000;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -31,8 +59,13 @@
 
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, var(--bg-grad-1), transparent),
+    radial-gradient(1000px 500px at 100% 0%, var(--accent-soft), transparent),
+    var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
@@ -41,6 +74,7 @@ body {
   padding: 1.5rem 1rem 4rem;
 }
 
+/* ---------- masthead ---------- */
 header.masthead {
   display: flex;
   justify-content: space-between;
@@ -53,7 +87,12 @@ header.masthead {
 
 header.masthead h1 {
   margin: 0 0 0.25rem;
-  font-size: 1.7rem;
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 header.masthead p {
@@ -63,37 +102,75 @@ header.masthead p {
   max-width: 48ch;
 }
 
-.mode-toggle {
+/* ---------- buttons / pills ---------- */
+.mode-toggle,
+.btn {
   background: var(--accent-soft);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-size: 0.85rem;
   white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s, transform 0.05s;
 }
 
-.mode-toggle:hover {
+.mode-toggle:hover,
+.btn:hover {
   border-color: var(--accent);
+  background: var(--panel-hover);
 }
 
+.mode-toggle:active,
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+/* ---------- panels ---------- */
 section.panel {
-  background: var(--panel);
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  padding: 1.2rem 1.35rem;
   margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+section.panel.accent {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft), var(--shadow);
 }
 
 section.panel h2 {
   margin: 0 0 0.9rem;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+section.panel h3 {
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.subtle {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* ---------- tables ---------- */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -103,7 +180,7 @@ table {
 th,
 td {
   text-align: right;
-  padding: 0.4rem 0.5rem;
+  padding: 0.45rem 0.5rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -115,9 +192,17 @@ td:first-child {
 th {
   color: var(--muted);
   font-weight: 600;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
+}
+
+tbody tr {
+  transition: background 0.12s;
+}
+
+tbody tr:hover td {
+  background: var(--panel-hover);
 }
 
 tr.sweden td {
@@ -125,6 +210,11 @@ tr.sweden td {
   font-weight: 600;
 }
 
+tr.sweden:hover td {
+  background: var(--highlight);
+}
+
+/* probability bar behind the number */
 .bar-cell {
   position: relative;
 }
@@ -132,45 +222,81 @@ tr.sweden td {
 .bar {
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
-  background: var(--accent-soft);
-  opacity: 0.5;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--bar-from), var(--bar-to));
+  opacity: 0.85;
   z-index: 0;
 }
 
 .bar-cell span {
   position: relative;
   z-index: 1;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ---------- group standings grid ---------- */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
 }
 
+.group-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+}
+
+.group-card strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ---------- match rows ---------- */
 .match {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.45rem 0;
+  padding: 0.5rem 0.4rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.85rem;
+  border-radius: 6px;
+}
+
+.match:hover {
+  background: var(--panel-hover);
+}
+
+.match:last-child {
+  border-bottom: none;
+}
+
+.score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .badge {
-  font-size: 0.65rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 4px;
+  font-size: 0.62rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
 .badge.live {
   background: var(--live);
   color: #fff;
-  animation: pulse 1.5s infinite;
+  animation: pulse 1.4s infinite;
 }
 
 .badge.finished {
@@ -181,17 +307,59 @@ tr.sweden td {
 .badge.scheduled {
   background: transparent;
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
 }
 
 @keyframes pulse {
   50% {
-    opacity: 0.5;
+    opacity: 0.45;
   }
 }
 
+/* ---------- stat cards ---------- */
+.stat-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.95rem;
+}
+
+.stat-card .label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-card .value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* ---------- range sliders match the theme ---------- */
+input[type="range"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ---------- chart ---------- */
+.chart-wrap {
+  position: relative;
+  height: 320px;
+}
+
+/* ---------- misc ---------- */
 .flag {
   margin-right: 0.4rem;
+}
+
+.delta-pos {
+  color: var(--pos);
+}
+.delta-neg {
+  color: var(--neg);
 }
 
 .loading,
@@ -202,4 +370,13 @@ tr.sweden td {
 }
 .error {
   color: var(--live);
+}
+
+@media (max-width: 640px) {
+  header.masthead h1 {
+    font-size: 1.4rem;
+  }
+  .app {
+    padding: 1rem 0.7rem 3rem;
+  }
 }

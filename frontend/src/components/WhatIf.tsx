@@ -165,9 +165,9 @@ export function WhatIf({ snapshot, mode }: Props) {
                       style={{
                         color:
                           dChamp > 0.05
-                            ? "#4ade80"
+                            ? "var(--pos)"
                             : dChamp < -0.05
-                              ? "var(--live)"
+                              ? "var(--neg)"
                               : "var(--muted)",
                       }}
                     >

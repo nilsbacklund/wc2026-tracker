@@ -34,6 +34,7 @@ interface Strings {
   hide: string;
   // Sweden deep-dive
   swedenDeepDive: string;
+  swedenFixtures: string;
   swedenSurvival: string;
   swedenScenario: string;
   swedenScenarioIntro: string;
@@ -86,6 +87,7 @@ export const STRINGS: Record<Mode, Strings> = {
     show: "Visa",
     hide: "Dölj",
     swedenDeepDive: "Sverige: djupdykning",
+    swedenFixtures: "Gruppspelsmatcher",
     swedenSurvival: "Sveriges väg, runda för runda",
     swedenScenario: "Vad måste hända?",
     swedenScenarioIntro:
@@ -137,6 +139,7 @@ export const STRINGS: Record<Mode, Strings> = {
     show: "Show",
     hide: "Hide",
     swedenDeepDive: "Sweden: deep dive",
+    swedenFixtures: "Group-stage matches",
     swedenSurvival: "Sweden's path, round by round",
     swedenScenario: "What must happen?",
     swedenScenarioIntro:
