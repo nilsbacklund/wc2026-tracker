@@ -1,22 +1,23 @@
 import type { Metric, Mode, Snapshot } from "../types";
-import { METRIC_ORDER, STRINGS } from "../i18n";
+import { METRIC_ORDER, STRINGS, displayName } from "../i18n";
 import { flag } from "../flags";
 
 interface Props {
   snapshot: Snapshot;
   mode: Mode;
+  focus: string[];
   limit?: number;
 }
 
-export function OddsTable({ snapshot, mode, limit = 16 }: Props) {
+export function OddsTable({ snapshot, mode, focus, limit = 16 }: Props) {
   const t = STRINGS[mode];
   const teams = Object.keys(snapshot.probs).sort(
     (a, b) => snapshot.probs[b].champ - snapshot.probs[a].champ,
   );
   const shown = teams.slice(0, limit);
-  // Always include Sweden in Sverigeläge even if outside the top N.
-  if (mode === "sv" && !shown.includes("Sweden") && teams.includes("Sweden")) {
-    shown.push("Sweden");
+  // Always include focus teams, even if outside the top N.
+  for (const f of focus) {
+    if (!shown.includes(f) && teams.includes(f)) shown.push(f);
   }
 
   return (
@@ -33,10 +34,10 @@ export function OddsTable({ snapshot, mode, limit = 16 }: Props) {
         {shown.map((team) => {
           const p = snapshot.probs[team];
           return (
-            <tr key={team} className={team === "Sweden" ? "sweden" : ""}>
+            <tr key={team} className={focus.includes(team) ? "focus-row" : ""}>
               <td>
                 <span className="flag">{flag(team)}</span>
-                {team}
+                {displayName(team, mode)}
               </td>
               {METRIC_ORDER.map((m) => (
                 <td key={m} className="bar-cell">

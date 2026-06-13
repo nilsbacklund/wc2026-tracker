@@ -11,14 +11,14 @@ interface Strings {
   team: string;
   group: string;
   played: string;
-  swedenPanel: string;
-  swedenRoute: string;
   noHistory: string;
   live: string;
   finished: string;
   scheduled: string;
   updated: string;
   modeToggle: string;
+  light: string;
+  dark: string;
   metrics: Record<Metric, string>;
   // What-if panel
   whatIf: string;
@@ -26,23 +26,25 @@ interface Strings {
   whatIfReset: string;
   whatIfSimulating: string;
   whatIfBaseline: string;
-  whatIfNew: string;
   whatIfDelta: string;
   whatIfElo: string;
   whatIfPickTeams: string;
   show: string;
   hide: string;
-  // Sweden deep-dive
-  swedenDeepDive: string;
-  swedenFixtures: string;
-  swedenSurvival: string;
-  swedenScenario: string;
-  swedenScenarioIntro: string;
+  // Focus / team deep-dive (generic — works for any team)
+  focusHeading: string;
+  focusAdd: string;
+  focusHint: string;
+  routeSuffix: string;
+  roundByRound: string;
+  fixtures: string;
+  scenario: string;
+  scenarioIntro: string;
   scenarioReset: string;
   resultWin: string;
   resultDraw: string;
   resultLoss: string;
-  swedenVs: string;
+  vs: string;
 }
 
 export const STRINGS: Record<Mode, Strings> = {
@@ -51,21 +53,21 @@ export const STRINGS: Record<Mode, Strings> = {
     subtitle:
       "Monte Carlo-simulering efter varje resultat. 20 000 turneringar per uppdatering.",
     champion: "Världsmästare",
-    raceTitle: "Titelodds över tid",
+    raceTitle: "Titelodds över matcherna",
     oddsTable: "Oddstabell",
     standings: "Gruppställning",
     matches: "Matcher",
     team: "Lag",
     group: "Grupp",
     played: "S",
-    swedenPanel: "Sverige",
-    swedenRoute: "Sveriges väg genom turneringen",
     noHistory: "Historik fylls på allt eftersom matcher spelas.",
     live: "Live",
     finished: "Slut",
     scheduled: "Kommande",
     updated: "Uppdaterad",
     modeToggle: "Neutralt läge",
+    light: "Ljust",
+    dark: "Mörkt",
     metrics: {
       advance: "Vidare från grupp",
       r16: "Åttondel",
@@ -80,44 +82,47 @@ export const STRINGS: Record<Mode, Strings> = {
     whatIfReset: "Återställ",
     whatIfSimulating: "Simulerar…",
     whatIfBaseline: "Nuläge",
-    whatIfNew: "Nytt",
     whatIfDelta: "Skillnad",
     whatIfElo: "Elo",
     whatIfPickTeams: "Lag att justera",
     show: "Visa",
     hide: "Dölj",
-    swedenDeepDive: "Sverige: djupdykning",
-    swedenFixtures: "Gruppspelsmatcher",
-    swedenSurvival: "Sveriges väg, runda för runda",
-    swedenScenario: "Vad måste hända?",
-    swedenScenarioIntro:
-      "Välj hypotetiska resultat i Sveriges tre gruppmatcher och se hur chanserna förändras.",
+    focusHeading: "Fokuslag",
+    focusAdd: "Lägg till lag",
+    focusHint:
+      "Välj lag att markera i tabellen och grafen – varje lag får också en egen panel.",
+    routeSuffix: "vägen genom turneringen",
+    roundByRound: "Runda för runda",
+    fixtures: "Gruppspelsmatcher",
+    scenario: "Vad måste hända?",
+    scenarioIntro:
+      "Välj hypotetiska resultat i gruppmatcherna och se hur chanserna förändras.",
     scenarioReset: "Återställ scenario",
     resultWin: "Vinst",
     resultDraw: "Oavgjort",
     resultLoss: "Förlust",
-    swedenVs: "Sverige mot",
+    vs: "mot",
   },
   neutral: {
     title: "World Cup 2026 – Live Odds",
     subtitle:
       "Monte Carlo simulation after every result. 20,000 tournaments per update.",
     champion: "Champion",
-    raceTitle: "Title odds over time",
+    raceTitle: "Title odds over the matches",
     oddsTable: "Odds table",
     standings: "Group standings",
     matches: "Matches",
     team: "Team",
     group: "Group",
     played: "P",
-    swedenPanel: "Sweden",
-    swedenRoute: "Sweden's route through the tournament",
     noHistory: "History accumulates as matches are played.",
     live: "Live",
     finished: "FT",
     scheduled: "Upcoming",
     updated: "Updated",
     modeToggle: "Sverigeläge",
+    light: "Light",
+    dark: "Dark",
     metrics: {
       advance: "Advance",
       r16: "Round of 16",
@@ -132,23 +137,26 @@ export const STRINGS: Record<Mode, Strings> = {
     whatIfReset: "Reset",
     whatIfSimulating: "Simulating…",
     whatIfBaseline: "Now",
-    whatIfNew: "New",
     whatIfDelta: "Delta",
     whatIfElo: "Elo",
     whatIfPickTeams: "Teams to adjust",
     show: "Show",
     hide: "Hide",
-    swedenDeepDive: "Sweden: deep dive",
-    swedenFixtures: "Group-stage matches",
-    swedenSurvival: "Sweden's path, round by round",
-    swedenScenario: "What must happen?",
-    swedenScenarioIntro:
-      "Pick hypothetical results for Sweden's three group matches and see how the chances change.",
+    focusHeading: "Focus teams",
+    focusAdd: "Add a team",
+    focusHint:
+      "Pick teams to highlight in the table and chart — each also gets its own panel.",
+    routeSuffix: "route through the tournament",
+    roundByRound: "Round by round",
+    fixtures: "Group-stage matches",
+    scenario: "What must happen?",
+    scenarioIntro:
+      "Pick hypothetical results for the group matches and see how the chances change.",
     scenarioReset: "Reset scenario",
     resultWin: "Win",
     resultDraw: "Draw",
     resultLoss: "Loss",
-    swedenVs: "Sweden vs",
+    vs: "vs",
   },
 };
 
@@ -160,3 +168,9 @@ export const METRIC_ORDER: Metric[] = [
   "final",
   "champ",
 ];
+
+// Display name for a team in the given mode (Sweden localizes in Sverigeläge).
+export function displayName(team: string, mode: Mode): string {
+  if (mode === "sv" && team === "Sweden") return "Sverige";
+  return team;
+}

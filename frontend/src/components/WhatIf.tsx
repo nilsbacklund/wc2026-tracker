@@ -99,7 +99,7 @@ export function WhatIf({ snapshot, mode }: Props) {
     <section className="panel">
       <h2 style={{ justifyContent: "space-between" }}>
         <span>{t.whatIf}</span>
-        <button className="mode-toggle" onClick={() => setOpen(!open)}>
+        <button className="btn" onClick={() => setOpen(!open)}>
           {open ? t.hide : t.show}
         </button>
       </h2>
@@ -127,7 +127,7 @@ export function WhatIf({ snapshot, mode }: Props) {
                 const dChamp =
                   newP && baseP ? newP.champ - baseP.champ : 0;
                 return (
-                  <tr key={name} className={name === "Sweden" ? "sweden" : ""}>
+                  <tr key={name} className={name === "Sweden" && mode === "sv" ? "focus-row" : ""}>
                     <td>
                       <span className="flag">{flag(name)}</span>
                       {name}
@@ -186,7 +186,7 @@ export function WhatIf({ snapshot, mode }: Props) {
               gap: "1rem",
             }}
           >
-            <button className="mode-toggle" onClick={reset}>
+            <button className="btn" onClick={reset}>
               {t.whatIfReset}
             </button>
             {busy && (

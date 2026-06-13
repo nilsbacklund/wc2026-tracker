@@ -26,6 +26,7 @@ interface Props {
   latest: Snapshot;
   matches: Match[];
   mode: Mode;
+  focus: string[];
 }
 
 // Short label for a snapshot's triggering match, e.g. "🇲🇽 2–0 🇿🇦".
@@ -40,12 +41,14 @@ function pointLabel(s: Snapshot, byId: Map<number, Match>, mode: Mode): string {
   return `${flag(m.home)}${score}${flag(m.away)}`;
 }
 
-export function RaceChart({ history, latest, matches, mode }: Props) {
+export function RaceChart({ history, latest, matches, mode, focus }: Props) {
   const t = STRINGS[mode];
   const css = getComputedStyle(document.documentElement);
   const muted = css.getPropertyValue("--muted").trim() || "#9aa7c2";
   const text = css.getPropertyValue("--text").trim() || "#eef2fb";
-  const gridColor = "rgba(255,255,255,0.06)";
+  const accent = css.getPropertyValue("--accent").trim() || "#ffc83d";
+  const gridColor =
+    css.getPropertyValue("--appearance-grid").trim() || "rgba(128,128,128,0.18)";
 
   const { labels, datasets } = useMemo(() => {
     const byId = new Map(matches.map((m) => [m.id, m]));
@@ -59,20 +62,25 @@ export function RaceChart({ history, latest, matches, mode }: Props) {
       (a, b) => latest.probs[b].champ - latest.probs[a].champ,
     );
     const picks = ranked.slice(0, 6);
-    if (mode === "sv" && !picks.includes("Sweden")) picks.push("Sweden");
+    // Always include focus teams, highlighted with the theme accent.
+    for (const f of focus) if (!picks.includes(f)) picks.push(f);
 
-    const datasets = picks.map((team, i) => ({
-      label: `${flag(team)} ${team}`,
-      data: points.map((s) => s.probs[team]?.champ ?? null),
-      borderColor: team === "Sweden" ? "#ffd000" : COLORS[i % COLORS.length],
-      backgroundColor: team === "Sweden" ? "#ffd000" : COLORS[i % COLORS.length],
-      borderWidth: team === "Sweden" ? 3 : 2,
-      tension: 0.3,
-      pointRadius: points.length <= 12 ? 3 : 0,
-      pointHoverRadius: 5,
-    }));
+    const datasets = picks.map((team, i) => {
+      const isFocus = focus.includes(team);
+      const color = isFocus ? accent : COLORS[i % COLORS.length];
+      return {
+        label: `${flag(team)} ${team}`,
+        data: points.map((s) => s.probs[team]?.champ ?? null),
+        borderColor: color,
+        backgroundColor: color,
+        borderWidth: isFocus ? 3 : 2,
+        tension: 0.3,
+        pointRadius: points.length <= 12 ? 3 : 0,
+        pointHoverRadius: 5,
+      };
+    });
     return { labels, datasets };
-  }, [history, latest, matches, mode]);
+  }, [history, latest, matches, mode, focus, accent]);
 
   if (labels.length < 2) {
     return <p className="loading">{t.noHistory}</p>;
