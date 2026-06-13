@@ -1,0 +1,26 @@
+# Render Blueprint — deploys the WC2026 tracker as one Docker web service
+# (FastAPI serves the API + built frontend + runs the live ESPN poller).
+#
+# Setup: Render dashboard → New → Blueprint → connect this repo. Render reads
+# this file, then prompts for the two secret env vars below (sync: false).
+#
+# Note: the free plan sleeps after ~15 min idle and cold-starts on the next
+# request. On wake, the app's startup backfill re-ingests any results that
+# landed while it slept, so odds are always current; the live per-goal poller
+# runs while the service is awake (i.e. while someone is watching a match).
+services:
+  - type: web
+    name: wc2026-tracker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: frankfurt          # closest free region to Sweden + Supabase (eu-west-1)
+    plan: free
+    healthCheckPath: /          # served frontend returns 200 once the app is up
+    autoDeploy: true            # redeploy on every push to the default branch
+    envVars:
+      # Render injects PORT automatically; the Dockerfile binds to it.
+      - key: SUPABASE_DB_URL    # Supabase Session-pooler URI (entered in dashboard)
+        sync: false
+      - key: FOOTBALL_DATA_TOKEN  # optional; ESPN covers live scores keyless
+        sync: false
