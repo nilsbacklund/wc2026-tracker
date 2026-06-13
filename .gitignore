@@ -1,7 +1,20 @@
+# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
-.DS_Store
 .pytest_cache/
 *.egg-info/
+
+# Data (generated locally; production state lives in Supabase)
+data/*.sqlite
+data/*.sqlite-*
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+
+# Tooling
+.DS_Store
+.playwright-mcp/

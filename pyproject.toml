@@ -1,0 +1,29 @@
+[project]
+name = "wc2026"
+version = "0.1.0"
+description = "2026 World Cup live odds tracker: vectorized Monte Carlo engine + FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+supabase = [
+    "psycopg[binary]>=3.2",
+]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine/wc2026", "backend/wc2026_backend"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

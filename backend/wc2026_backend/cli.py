@@ -1,0 +1,105 @@
+"""Command-line entry points.
+
+    python -m wc2026_backend init           # create db + seed 104 fixtures
+    python -m wc2026_backend import-elo      # fetch live eloratings.net
+    python -m wc2026_backend fetch           # ESPN ingest + Elo + resim
+    python -m wc2026_backend add-result A B 2 1 [--ko WINNER] [--minute 60] [--live]
+    python -m wc2026_backend resim [N]
+    python -m wc2026_backend show            # latest odds table
+"""
+import argparse
+import sys
+
+from .fixtures import seed_matches
+from .store import Store
+from . import service
+
+
+def _show(store, top=16):
+    snap = store.latest_snapshot()
+    if not snap:
+        print("no snapshot yet — run `fetch` or `resim`")
+        return
+    probs = snap["probs"]
+    print(f"snapshot #{snap['id']}  trigger={snap['trigger']}  "
+          f"n={snap['n_sims']}  {snap['ts']}\n")
+    print(f"{'Team':<14}{'Champ%':>8}{'Final%':>8}{'Top4%':>8}{'QF%':>7}"
+          f"{'R16%':>7}{'Adv%':>7}")
+    print("-" * 59)
+    for team in sorted(probs, key=lambda t: probs[t]["champ"], reverse=True)[:top]:
+        p = probs[team]
+        print(f"{team:<14}{p['champ']:>8.1f}{p['final']:>8.1f}{p['top4']:>8.1f}"
+              f"{p['qf']:>7.1f}{p['r16']:>7.1f}{p['advance']:>7.1f}")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="wc2026_backend")
+    parser.add_argument("--db", default=None, help="SQLite path")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("init")
+    sub.add_parser("import-elo")
+    sub.add_parser("fetch")
+    sub.add_parser("show")
+    p_resim = sub.add_parser("resim")
+    p_resim.add_argument("n", nargs="?", type=int, default=20000)
+    p_add = sub.add_parser("add-result")
+    p_add.add_argument("home")
+    p_add.add_argument("away")
+    p_add.add_argument("home_score", type=int)
+    p_add.add_argument("away_score", type=int)
+    p_add.add_argument("--ko", help="winner team name (knockout match)")
+    p_add.add_argument("--decided-by", default="regular",
+                       choices=["regular", "et", "pens"])
+    p_add.add_argument("--minute", type=int)
+    p_add.add_argument("--live", action="store_true",
+                       help="mark in_play instead of finished")
+
+    args = parser.parse_args(argv)
+    store = Store(args.db) if args.db else Store()
+
+    if args.cmd == "init":
+        seed_matches(store)
+        print(f"seeded {len(store.all_matches())} matches into {store.path}")
+    elif args.cmd == "import-elo":
+        ratings = service.import_elo(store)
+        print(f"imported {len(ratings)} Elo ratings from eloratings.net")
+    elif args.cmd == "add-result":
+        match = store.match_by_teams(args.home, args.away)
+        if not match:
+            sys.exit(f"no fixture for {args.home} vs {args.away}")
+        if args.home == match["home"]:
+            hs, as_ = args.home_score, args.away_score
+        else:
+            hs, as_ = args.away_score, args.home_score
+        row = dict(match, status="in_play" if args.live else "finished",
+                   home_score=hs, away_score=as_, minute=args.minute)
+        if args.ko:
+            row["ko_winner"] = args.ko
+            row["ko_decided_by"] = args.decided_by
+        store.upsert_match(service._to_upsert(row))
+        service.apply_elo_updates(store)
+        out = service.resimulate(store, trigger="manual", match_id=match["id"])
+        print(f"recorded; snapshot #{out['snapshot_id']}")
+        _show(store)
+    elif args.cmd == "fetch":
+        changed = service.ingest_espn(store)
+        print(f"ESPN: {len(changed)} matches changed {changed}")
+        updated = service.apply_elo_updates(store)
+        if updated:
+            print(f"Elo updated for matches {updated}")
+        out = service.resimulate(store, trigger="scheduled")
+        print(f"snapshot #{out['snapshot_id']}")
+        _show(store)
+    elif args.cmd == "resim":
+        out = service.resimulate(store, n=args.n, trigger="manual")
+        print(f"snapshot #{out['snapshot_id']} ({args.n} sims)")
+        _show(store)
+    elif args.cmd == "show":
+        _show(store)
+
+    store.close()
+
+
+if __name__ == "__main__":
+    main()
