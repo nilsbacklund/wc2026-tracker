@@ -104,30 +104,58 @@ def _state_with(all_matches, known_ids):
     return {"matches": out}
 
 
+def _initial_elo(store):
+    """Pre-tournament Elo: each team's rating before its first update.
+
+    Reconstructed from elo_history (the earliest recorded 'before' per team);
+    teams that haven't played keep their current rating (never updated).
+    """
+    ratings = dict(store.get_elo())
+    earliest = {}
+    for r in store.elo_history_rows():  # ascending application order
+        earliest.setdefault(r["team"], r["before"])
+    ratings.update(earliest)
+    return ratings
+
+
 def rebuild_history(store, n=20000):
     """Replace the snapshot history with one snapshot per played match.
 
     Replays finished matches in chronological (kickoff) order: a pre-tournament
-    baseline, then a snapshot conditioned on the cumulative results after each
-    match. This powers the "odds over the played matches" chart. Uses the
-    current Elo ratings throughout (the historical odds trajectory is driven by
-    result conditioning; ratings are a small secondary effect). A fixed seed
-    keeps Monte Carlo noise consistent between adjacent points.
+    baseline, then a snapshot after each match. Crucially, the Elo ratings
+    EVOLVE through the replay — starting from the pre-tournament values and
+    applying each match's K=60 update in order — so every historical point
+    reflects what was actually known then (a team's rating jump shows up at the
+    match that caused it, not retroactively). Each point also conditions on the
+    cumulative real results. A fixed seed keeps Monte Carlo noise consistent
+    between adjacent points.
     """
-    spec = spec_from_store(store)
     all_matches = store.all_matches()
     finished = [m for m in all_matches
                 if m["status"] == "finished" and m["home_score"] is not None]
     finished.sort(key=lambda m: (m["kickoff_utc"] or "", m["id"]))
 
+    elo = _initial_elo(store)
     store.clear_snapshots()
-    known = set()
-    res = run_sims(spec=spec, state=_state_with(all_matches, known), n=n, seed=2026)
+
+    # Baseline: pre-tournament ratings, no results.
+    res = run_sims(spec=default_spec(elo),
+                   state=_state_with(all_matches, set()), n=n, seed=2026)
     store.add_snapshot(res["probs"], n, "pretournament", None)
+
+    known = set()
     for m in finished:
+        a, b = m["home"], m["away"]
+        # Evolve Elo with this match's result (same rule as live updates).
+        if a in elo and b in elo:
+            eff_a = float(model.effective_rating(elo[a], a in HOSTS, a in AMERICAS))
+            eff_b = float(model.effective_rating(elo[b], b in HOSTS, b in AMERICAS))
+            elo[a], elo[b] = elo_rule.update(
+                elo[a], elo[b], m["home_score"], m["away_score"],
+                eff_a=eff_a, eff_b=eff_b)
         known.add(m["id"])
-        res = run_sims(spec=spec, state=_state_with(all_matches, known),
-                       n=n, seed=2026)
+        res = run_sims(spec=default_spec(elo),
+                       state=_state_with(all_matches, known), n=n, seed=2026)
         store.add_snapshot(res["probs"], n, "fulltime", m["id"])
     return len(finished)
 

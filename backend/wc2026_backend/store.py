@@ -141,6 +141,12 @@ class Store:
         return {r["match_id"] for r in
                 self.conn.execute("SELECT DISTINCT match_id FROM elo_history")}
 
+    def elo_history_rows(self):
+        """All Elo changes in application order (ascending id)."""
+        return [dict(r) for r in self.conn.execute(
+            "SELECT team, match_id, before, after, ts FROM elo_history "
+            "ORDER BY id")]
+
     # --- snapshots ---
     def add_snapshot(self, probs, n_sims, trigger, match_id=None):
         with self._lock:
