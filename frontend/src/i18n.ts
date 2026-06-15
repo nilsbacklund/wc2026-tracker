@@ -45,6 +45,11 @@ interface Strings {
   resultDraw: string;
   resultLoss: string;
   vs: string;
+  // Most decisive matches
+  vitalMatches: string;
+  vitalIntro: string;
+  vitalFor: string;
+  biggestMover: string;
 }
 
 export const STRINGS: Record<Mode, Strings> = {
@@ -102,6 +107,11 @@ export const STRINGS: Record<Mode, Strings> = {
     resultDraw: "Oavgjort",
     resultLoss: "Förlust",
     vs: "mot",
+    vitalMatches: "Mest avgörande matcher",
+    vitalIntro:
+      "Kommande matcher rangordnade efter hur mycket resultatet väntas flytta oddsen.",
+    vitalFor: "Viktigaste matcherna för",
+    biggestMover: "Störst rörelse",
   },
   neutral: {
     title: "World Cup 2026 – Live Odds",
@@ -157,6 +167,11 @@ export const STRINGS: Record<Mode, Strings> = {
     resultDraw: "Draw",
     resultLoss: "Loss",
     vs: "vs",
+    vitalMatches: "Most decisive matches",
+    vitalIntro:
+      "Upcoming matches ranked by how much their result is expected to move the odds.",
+    vitalFor: "Most decisive matches for",
+    biggestMover: "Biggest swing",
   },
 };
 

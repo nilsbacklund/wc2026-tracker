@@ -93,6 +93,12 @@ def standings():
     return {"groups": standings_view.current_standings(store())}
 
 
+@app.get("/api/importance")
+def importance():
+    """Stored per-match importance analysis (may be null until first computed)."""
+    return store().get_analysis("importance") or {"matches": []}
+
+
 @app.get("/api/teams")
 def teams():
     elo = store().get_elo()

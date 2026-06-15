@@ -134,6 +134,23 @@ class SupabaseStore:
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute("DELETE FROM snapshots")
 
+    # --- analysis (key/value) ---
+    def set_analysis(self, key, value):
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO analysis (key, value, ts) VALUES (%s,%s,%s) "
+                "ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, "
+                "ts=EXCLUDED.ts", (key, json.dumps(value), _now()))
+
+    def get_analysis(self, key):
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT value FROM analysis WHERE key=%s", (key,))
+            row = cur.fetchone()
+        if not row:
+            return None
+        v = row[0]
+        return json.loads(v) if isinstance(v, str) else v
+
     # --- engine bridge ---
     def engine_state(self):
         """Matches in the shape engine.run_sims expects."""

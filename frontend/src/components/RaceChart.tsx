@@ -38,28 +38,32 @@ export function RaceChart({ history, latest, matches, mode, focus }: Props) {
   const text = css.getPropertyValue("--text").trim() || "#eef2fb";
   const accent = css.getPropertyValue("--accent").trim() || "#ffc83d";
 
-  const { datasets, hasData } = useMemo(() => {
+  const { datasets, hasData, pointLabels } = useMemo(() => {
     const byId = new Map(matches.map((m) => [m.id, m]));
     const kickoffs = matches
       .map((m) => (m.kickoff_utc ? new Date(m.kickoff_utc).getTime() : NaN))
       .filter((n) => !isNaN(n));
     const firstKickoff = kickoffs.length ? Math.min(...kickoffs) : Date.now();
+    const startLabel = mode === "sv" ? "Före turneringen" : "Pre-tournament";
 
     // One point per match: the pre-tournament baseline + each full-time
     // snapshot, placed on the timeline at the match's kickoff.
-    const points = history
+    const pts = history
       .filter((s) => s.trigger === "pretournament" || s.trigger === "fulltime")
       .map((s) => {
-        let x: number;
         if (s.trigger === "pretournament" || s.match_id == null) {
-          x = firstKickoff - DAY; // baseline sits just before kick-off
-        } else {
-          const m = byId.get(s.match_id);
-          x = m?.kickoff_utc ? new Date(m.kickoff_utc).getTime() : firstKickoff;
+          return { x: firstKickoff - DAY, probs: s.probs, label: startLabel };
         }
-        return { x, probs: s.probs };
+        const m = byId.get(s.match_id);
+        const x = m?.kickoff_utc ? new Date(m.kickoff_utc).getTime() : firstKickoff;
+        const label = m
+          ? `${flag(m.home)} ${m.home} ${m.home_score ?? ""}–${m.away_score ?? ""} ${m.away} ${flag(m.away)}`
+          : `#${s.match_id}`;
+        return { x, probs: s.probs, label };
       })
       .sort((a, b) => a.x - b.x);
+    const points = pts;
+    const pointLabels = pts.map((p) => p.label);
 
     const ranked = Object.keys(latest.probs).sort(
       (a, b) => latest.probs[b].champ - latest.probs[a].champ,
@@ -81,7 +85,7 @@ export function RaceChart({ history, latest, matches, mode, focus }: Props) {
         pointHoverRadius: 5,
       };
     });
-    return { datasets, hasData: points.length >= 2 };
+    return { datasets, hasData: points.length >= 2, pointLabels };
   }, [history, latest, matches, mode, focus, accent]);
 
   if (!hasData) {
@@ -114,6 +118,9 @@ export function RaceChart({ history, latest, matches, mode, focus }: Props) {
             legend: { labels: { color: text, usePointStyle: true, boxWidth: 8 } },
             tooltip: {
               callbacks: {
+                // Title = the match played at this point (teams + score).
+                title: (items) =>
+                  items.length ? pointLabels[items[0].dataIndex] ?? "" : "",
                 label: (ctx) =>
                   `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(1)}%`,
               },

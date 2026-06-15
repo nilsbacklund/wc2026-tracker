@@ -55,3 +55,27 @@ export interface HistoryPoint {
 }
 
 export type Mode = "sv" | "neutral";
+
+export interface MatchImpactSwing {
+  min: number;
+  max: number;
+  base: number;
+}
+
+export interface MatchImpact {
+  id: number;
+  home: string | null;
+  away: string | null;
+  group: string | null;
+  kickoff_utc: string | null;
+  outcomes: { label: string; prob: number; score: { home: number; away: number } }[];
+  total: { champ: number; advance: number };
+  teams: Record<string, { champ: MatchImpactSwing; advance: MatchImpactSwing }>;
+}
+
+export interface Importance {
+  matches: MatchImpact[];
+  n_sims?: number;
+}
+
+export type ImpactMetric = "advance" | "champ";

@@ -71,6 +71,7 @@ class LivePoller:
                 # chart stays correct and self-heals after any downtime.
                 await asyncio.to_thread(service.rebuild_history, self.store)
                 log.info("startup backfill updated %d matches", len(changed))
+            await self._refresh_importance()
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -130,8 +131,21 @@ class LivePoller:
         service.apply_elo_updates(self.store)
         out = service.resimulate(self.store, n=self.n_sims,
                                  trigger=trigger, match_id=match_id)
+        # A completed match changes the set of remaining fixtures, so refresh
+        # the per-match importance ranking (best-effort; it's heavy).
+        if trigger == "fulltime":
+            await self._refresh_importance()
         return {"changed": changed, "trigger": trigger,
                 "match_id": match_id, "snapshot_id": out["snapshot_id"]}
+
+    async def _refresh_importance(self):
+        try:
+            await asyncio.to_thread(service.compute_and_store_importance,
+                                    self.store)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("importance refresh failed")
 
     def _classify(self, changed, before, after):
         """Pick the most significant trigger among changed matches."""

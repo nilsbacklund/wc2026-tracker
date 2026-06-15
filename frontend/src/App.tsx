@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Match, Mode, Snapshot, StandingRow } from "./types";
+import type { Importance, Match, Mode, Snapshot, StandingRow } from "./types";
 import { STRINGS } from "./i18n";
 import {
   fetchHistory,
+  fetchImportance,
   fetchLatestOdds,
   fetchMatches,
   fetchStandings,
@@ -13,6 +14,7 @@ import { MatchList } from "./components/MatchList";
 import { RaceChart } from "./components/RaceChart";
 import { TeamFocus } from "./components/TeamFocus";
 import { FocusPicker } from "./components/FocusPicker";
+import { VitalMatches } from "./components/VitalMatches";
 import { WhatIf } from "./components/WhatIf";
 import { subscribeToSnapshots } from "./realtime";
 
@@ -47,6 +49,7 @@ export default function App() {
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Record<string, StandingRow[]>>({});
+  const [importance, setImportance] = useState<Importance | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,17 +69,19 @@ export default function App() {
     let active = true;
     const load = async () => {
       try {
-        const [l, h, m, s] = await Promise.all([
+        const [l, h, m, s, imp] = await Promise.all([
           fetchLatestOdds(),
           fetchHistory(),
           fetchMatches(),
           fetchStandings(),
+          fetchImportance().catch(() => null),
         ]);
         if (!active) return;
         setLatest(l);
         setHistory(h);
         setMatches(m);
         setStandings(s);
+        setImportance(imp);
         setError(null);
       } catch (e) {
         if (active) setError(String(e));
@@ -132,7 +137,13 @@ export default function App() {
       </header>
 
       {mode === "sv" && (
-        <TeamFocus team="Sweden" snapshot={latest} matches={matches} mode={mode} />
+        <TeamFocus
+          team="Sweden"
+          snapshot={latest}
+          matches={matches}
+          mode={mode}
+          importance={importance}
+        />
       )}
 
       {mode === "neutral" && (
@@ -150,10 +161,13 @@ export default function App() {
               snapshot={latest}
               matches={matches}
               mode={mode}
+              importance={importance}
             />
           ))}
         </>
       )}
+
+      {importance && <VitalMatches importance={importance} mode={mode} />}
 
       <WhatIf snapshot={latest} mode={mode} />
 

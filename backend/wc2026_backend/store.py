@@ -54,6 +54,11 @@ CREATE TABLE IF NOT EXISTS snapshots (
     probs TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_snapshots_ts ON snapshots(ts);
+CREATE TABLE IF NOT EXISTS analysis (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    ts TEXT
+);
 """
 
 
@@ -164,6 +169,20 @@ class Store:
         with self._lock:
             self.conn.execute("DELETE FROM snapshots")
             self.conn.commit()
+
+    # --- analysis (key/value) ---
+    def set_analysis(self, key, value):
+        with self._lock:
+            self.conn.execute(
+                "INSERT INTO analysis (key, value, ts) VALUES (?,?,?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
+                "ts=excluded.ts", (key, json.dumps(value), _now()))
+            self.conn.commit()
+
+    def get_analysis(self, key):
+        r = self.conn.execute(
+            "SELECT value FROM analysis WHERE key=?", (key,)).fetchone()
+        return json.loads(r["value"]) if r else None
 
     # --- engine bridge ---
     def engine_state(self):

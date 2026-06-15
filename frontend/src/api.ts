@@ -1,4 +1,4 @@
-import type { Match, Snapshot, StandingRow, TeamProbs } from "./types";
+import type { Importance, Match, Snapshot, StandingRow, TeamProbs } from "./types";
 
 const BASE = "/api";
 
@@ -25,6 +25,8 @@ export const fetchTeamHistory = (team: string) =>
 
 export const fetchHistory = () =>
   get<{ snapshots: Snapshot[] }>("/odds/history").then((d) => d.snapshots);
+
+export const fetchImportance = () => get<Importance>("/importance");
 
 export interface TeamInfo {
   name: string;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Match, Mode, Snapshot } from "../types";
+import type { Importance, Match, Mode, Snapshot } from "../types";
 import { METRIC_ORDER, STRINGS, displayName } from "../i18n";
 import { simulate } from "../api";
 import { flag } from "../flags";
@@ -9,6 +9,7 @@ interface Props {
   snapshot: Snapshot;
   matches: Match[];
   mode: Mode;
+  importance?: Importance | null;
 }
 
 type Outcome = "win" | "draw" | "loss";
@@ -26,7 +27,7 @@ function hypoFor(m: Match, team: string, outcome: Outcome) {
 // Per-team focus panel: survival funnel across all rounds, the team's group
 // fixtures, and a "what must happen" scenario explorer. Reused for Sweden in
 // Sverigeläge and for any picked team in neutral mode.
-export function TeamFocus({ team, snapshot, matches, mode }: Props) {
+export function TeamFocus({ team, snapshot, matches, mode, importance }: Props) {
   const t = STRINGS[mode];
   const base = snapshot.probs[team];
 
@@ -77,6 +78,15 @@ export function TeamFocus({ team, snapshot, matches, mode }: Props) {
   const delta = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}`;
   const deltaClass = (d: number) =>
     d > 0.05 ? "delta-pos" : d < -0.05 ? "delta-neg" : "";
+
+  // Matches that swing this team's qualification odds the most (incl. rivals').
+  const vital = (importance?.matches ?? [])
+    .map((m) => ({ m, sw: m.teams[team]?.advance }))
+    .filter((x) => x.sw)
+    .map((x) => ({ ...x, swing: x.sw!.max - x.sw!.min }))
+    .filter((x) => x.swing >= 0.5)
+    .sort((a, b) => b.swing - a.swing)
+    .slice(0, 5);
 
   return (
     <section className="panel accent">
@@ -145,6 +155,29 @@ export function TeamFocus({ team, snapshot, matches, mode }: Props) {
           );
         })}
       </div>
+
+      {/* matches that matter most for this team */}
+      {vital.length > 0 && (
+        <>
+          <h3 style={{ marginTop: "1.4rem" }}>
+            {t.vitalFor} {name}
+          </h3>
+          <div>
+            {vital.map(({ m, sw }) => (
+              <div className="match" key={m.id}>
+                <span>
+                  {flag(m.home)} {displayName(m.home || "", mode)}{" "}
+                  <span style={{ opacity: 0.5 }}>{t.vs}</span>{" "}
+                  {displayName(m.away || "", mode)} {flag(m.away)}
+                </span>
+                <span className="subtle">
+                  {t.metrics.advance}: {sw!.min.toFixed(0)}–{sw!.max.toFixed(0)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* scenario explorer */}
       {groupMatches.length > 0 && (

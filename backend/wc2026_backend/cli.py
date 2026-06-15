@@ -9,6 +9,7 @@
     python -m wc2026_backend migrate         # run SQL migrations on Supabase
     python -m wc2026_backend backfill        # ingest all match days so far
     python -m wc2026_backend rebuild-history # one odds snapshot per played match
+    python -m wc2026_backend importance      # rank upcoming matches by impact
 
 With SUPABASE_DB_URL set (e.g. in .env) every command targets Supabase
 Postgres; otherwise a local SQLite db. --db forces a specific SQLite path.
@@ -73,6 +74,7 @@ def main(argv=None):
     sub.add_parser("show")
     sub.add_parser("migrate")
     sub.add_parser("rebuild-history")
+    sub.add_parser("importance")
     p_backfill = sub.add_parser("backfill")
     p_backfill.add_argument("--start", default=service.TOURNAMENT_START)
     p_backfill.add_argument("--end", default=None)
@@ -150,6 +152,14 @@ def main(argv=None):
         count = service.rebuild_history(store)
         print(f"rebuilt history: 1 baseline + {count} per-match snapshots")
         _show(store)
+    elif args.cmd == "importance":
+        data = service.compute_and_store_importance(store)
+        print(f"computed importance for {len(data['matches'])} upcoming matches:")
+        for m in sorted(data["matches"],
+                        key=lambda x: x["total"]["advance"], reverse=True)[:8]:
+            print(f"  {m['home']} v {m['away']}  "
+                  f"advance-impact {m['total']['advance']:.1f}  "
+                  f"title-impact {m['total']['champ']:.2f}")
     elif args.cmd == "show":
         _show(store)
 

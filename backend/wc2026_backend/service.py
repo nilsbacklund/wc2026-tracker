@@ -132,6 +132,117 @@ def rebuild_history(store, n=20000):
     return len(finished)
 
 
+def _outcome_probs(spec, home, away, stage):
+    """Probabilities + representative scores for a match's outcomes.
+
+    Group: home win / draw / away win via independent Poisson goals.
+    Knockout: two outcomes via the compressed Elo win probability.
+    Scores are oriented to the stored home/away.
+    """
+    from math import exp, factorial
+    info = spec["teams"]
+
+    def eff(team):
+        return float(model.effective_rating(
+            info[team]["elo"], info[team]["host"], info[team]["americas"]))
+
+    ea, eb = eff(home), eff(away)
+    if stage != "group":
+        p = float(model.ko_win_prob(ea, eb))
+        return [("home", p, {"home": 1, "away": 0}),
+                ("away", 1 - p, {"home": 0, "away": 1})]
+
+    la, lb = (float(x) for x in model.lambdas(ea, eb))
+    pois = lambda k, lam: exp(-lam) * lam ** k / factorial(k)
+    ph = pd = pa = 0.0
+    for i in range(11):
+        for j in range(11):
+            p = pois(i, la) * pois(j, lb)
+            if i > j:
+                ph += p
+            elif i == j:
+                pd += p
+            else:
+                pa += p
+    s = ph + pd + pa or 1.0
+    return [("home", ph / s, {"home": 2, "away": 0}),
+            ("draw", pd / s, {"home": 1, "away": 1}),
+            ("away", pa / s, {"home": 0, "away": 2})]
+
+
+def _force(state, match_id, score):
+    """Copy of state with one match forced to a finished result."""
+    out = []
+    for m in state["matches"]:
+        if m["id"] == match_id:
+            m = {**m, "status": "finished", "score": score}
+            if m.get("stage") and m["stage"] != "group":
+                winner = m["home"] if score["home"] > score["away"] else m["away"]
+                m["ko"] = {"winner": winner, "decided_by": "regular"}
+        out.append(m)
+    return {"matches": out}
+
+
+METRICS_IMPORTANCE = ("champ", "advance")
+
+
+def match_importance(store, n=6000, max_matches=14):
+    """Rank upcoming matches by how much their outcome moves the predictions.
+
+    For each scheduled match with known teams, force each outcome, re-simulate,
+    and measure (a) the expected shift of the whole title-odds distribution
+    (total impact) and (b) each team's min/max odds across outcomes (per-team
+    leverage — includes matches a team isn't playing in). Uses current ratings.
+    """
+    spec = spec_from_store(store)
+    state = store.engine_state()
+    base = run_sims(spec=spec, state=state, n=n, seed=2026)["probs"]
+    teams = list(base.keys())
+
+    upcoming = [m for m in store.all_matches()
+                if m["status"] == "scheduled" and m["home"] and m["away"]]
+    upcoming.sort(key=lambda m: (m["kickoff_utc"] or "", m["id"]))
+
+    out = []
+    for m in upcoming[:max_matches]:
+        outs = _outcome_probs(spec, m["home"], m["away"], m["stage"])
+        per_team = {t: {k: [] for k in METRICS_IMPORTANCE} for t in teams}
+        total = {k: 0.0 for k in METRICS_IMPORTANCE}
+        meta = []
+        for label, prob, score in outs:
+            probs_o = run_sims(spec=spec, state=_force(state, m["id"], score),
+                               n=n, seed=2026)["probs"]
+            meta.append({"label": label, "prob": round(prob, 3),
+                         "score": score})
+            for k in METRICS_IMPORTANCE:
+                acc = 0.0
+                for t in teams:
+                    v = probs_o[t][k]
+                    per_team[t][k].append(v)
+                    acc += abs(v - base[t][k])
+                total[k] += prob * 0.5 * acc
+        team_swing = {
+            t: {k: {"min": round(min(per_team[t][k]), 2),
+                    "max": round(max(per_team[t][k]), 2),
+                    "base": round(base[t][k], 2)}
+                for k in METRICS_IMPORTANCE}
+            for t in teams}
+        out.append({
+            "id": m["id"], "home": m["home"], "away": m["away"],
+            "group": m["grp"], "kickoff_utc": m["kickoff_utc"],
+            "outcomes": meta,
+            "total": {k: round(total[k], 2) for k in METRICS_IMPORTANCE},
+            "teams": team_swing,
+        })
+    return {"matches": out, "n_sims": n}
+
+
+def compute_and_store_importance(store, n=6000, max_matches=14):
+    data = match_importance(store, n=n, max_matches=max_matches)
+    store.set_analysis("importance", data)
+    return data
+
+
 def apply_elo_updates(store):
     """Apply Elo updates for finished matches not yet applied. Idempotent."""
     applied = store.elo_applied_match_ids()

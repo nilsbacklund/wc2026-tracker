@@ -543,6 +543,7 @@ input[type="range"] {
 
 .lab-track {
   flex: 1;
+  display: block;
   height: 18px;
   background: var(--panel-2);
   border-radius: 5px;
@@ -550,6 +551,7 @@ input[type="range"] {
 }
 
 .lab-fill {
+  display: block;
   height: 100%;
   border-radius: 5px;
   background: var(--accent);
