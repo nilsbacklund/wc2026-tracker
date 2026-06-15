@@ -78,7 +78,7 @@ export const STRINGS: Record<Mode, Strings> = {
     },
     whatIf: "Tänk om?",
     whatIfIntro:
-      "Justera lagens Elo-betyg och se hur titeloddsen förändras. Simuleringen körs på servern (20 000 turneringar).",
+      "Stärk eller försvaga valfria lag och se hela titelracet räkna om sig direkt (20 000 turneringar per drag).",
     whatIfReset: "Återställ",
     whatIfSimulating: "Simulerar…",
     whatIfBaseline: "Nuläge",
@@ -133,7 +133,7 @@ export const STRINGS: Record<Mode, Strings> = {
     },
     whatIf: "What if?",
     whatIfIntro:
-      "Adjust teams' Elo ratings and see how the title odds shift. The simulation runs server-side (20,000 tournaments).",
+      "Boost or weaken any teams and watch the whole title race recompute live (20,000 tournaments per change).",
     whatIfReset: "Reset",
     whatIfSimulating: "Simulating…",
     whatIfBaseline: "Now",

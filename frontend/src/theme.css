@@ -467,6 +467,124 @@ input[type="range"] {
   cursor: pointer;
 }
 
+/* ---------- title-race lab ---------- */
+.lab-adjuster {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 0;
+}
+
+.lab-adjuster .name {
+  width: 150px;
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lab-adjuster input[type="range"] {
+  flex: 1;
+  min-width: 90px;
+}
+
+.lab-adjuster .amount {
+  width: 86px;
+  flex: 0 0 auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+
+.lab-remove {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+}
+.lab-remove:hover {
+  color: var(--neg);
+}
+
+.lab-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.18rem 0.4rem;
+  border-radius: 7px;
+}
+
+.lab-row.adjusted {
+  background: var(--highlight);
+}
+
+.lab-rank {
+  width: 1.5rem;
+  flex: 0 0 auto;
+  text-align: right;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lab-team {
+  width: 132px;
+  flex: 0 0 auto;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lab-track {
+  flex: 1;
+  height: 18px;
+  background: var(--panel-2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.lab-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--accent);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lab-val {
+  width: 52px;
+  flex: 0 0 auto;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
+.lab-delta {
+  width: 58px;
+  flex: 0 0 auto;
+  text-align: right;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin: 0.2rem 0 1rem;
+}
+
+.metric-tabs .btn {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+}
+
 /* ---------- chart ---------- */
 .chart-wrap {
   position: relative;

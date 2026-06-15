@@ -67,8 +67,9 @@ class LivePoller:
             changed = await asyncio.to_thread(service.backfill_espn, self.store)
             if changed:
                 await asyncio.to_thread(service.apply_elo_updates, self.store)
-                await asyncio.to_thread(
-                    service.resimulate, self.store, trigger="scheduled")
+                # Rebuild the clean one-snapshot-per-match history so the odds
+                # chart stays correct and self-heals after any downtime.
+                await asyncio.to_thread(service.rebuild_history, self.store)
                 log.info("startup backfill updated %d matches", len(changed))
         except asyncio.CancelledError:
             raise
@@ -118,6 +119,13 @@ class LivePoller:
 
         after = {m["id"]: m for m in self.store.all_matches()}
         trigger, match_id = self._classify(changed, before, after)
+
+        # Only re-simulate on a real event (kickoff/goal/full time). A bare
+        # "scheduled" trigger means nothing material changed (e.g. just the
+        # live minute ticking) — updating the match row is enough; writing a
+        # snapshot every poll cycle would flood the odds history.
+        if trigger == "scheduled":
+            return {"changed": changed, "trigger": None, "snapshot_id": None}
 
         service.apply_elo_updates(self.store)
         out = service.resimulate(self.store, n=self.n_sims,

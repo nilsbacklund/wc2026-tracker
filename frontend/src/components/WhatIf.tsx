@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Mode, Snapshot } from "../types";
-import { STRINGS } from "../i18n";
+import type { Metric, Mode, Snapshot } from "../types";
+import { STRINGS, displayName } from "../i18n";
 import { simulate, fetchTeams, type TeamInfo } from "../api";
 import { flag } from "../flags";
 
@@ -9,16 +9,18 @@ interface Props {
   mode: Mode;
 }
 
-const ELO_RANGE = 300;
+const ADJUST_MAX = 300; // ± strength swing applied to a team's Elo
+const LEADERBOARD = 12;
+const METRICS: Metric[] = ["champ", "final", "top4", "advance"];
 
-// Collapsible what-if panel: nudge a handful of teams' Elo and re-run the
-// simulation server-side, showing the resulting champ%/advance% vs baseline.
+// Title Race Lab: boost or weaken any teams and watch the whole title-odds
+// leaderboard re-rank live (server-side simulation, debounced).
 export function WhatIf({ snapshot, mode }: Props) {
   const t = STRINGS[mode];
   const [open, setOpen] = useState(false);
   const [teams, setTeams] = useState<TeamInfo[]>([]);
-  // team -> overridden Elo (only teams the user is adjusting)
-  const [overrides, setOverrides] = useState<Record<string, number>>({});
+  const [adjust, setAdjust] = useState<Record<string, number>>({});
+  const [metric, setMetric] = useState<Metric>("champ");
   const [result, setResult] = useState<Snapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const debounce = useRef<number | undefined>(undefined);
@@ -29,71 +31,82 @@ export function WhatIf({ snapshot, mode }: Props) {
     return map;
   }, [teams]);
 
-  // Default selection: current top 6 by champ%, plus Sweden in sv mode.
-  const defaultPicks = useMemo(() => {
-    const ranked = Object.keys(snapshot.probs).sort(
-      (a, b) => snapshot.probs[b].champ - snapshot.probs[a].champ,
-    );
-    const picks = ranked.slice(0, 6);
-    if (mode === "sv" && !picks.includes("Sweden")) picks.push("Sweden");
-    return picks;
-  }, [snapshot, mode]);
-
+  // Load the team roster (with base Elo) when first opened, and seed the
+  // current favourite as a ready-to-drag adjuster.
   useEffect(() => {
     if (!open || teams.length) return;
-    fetchTeams().then(setTeams).catch(() => {});
-  }, [open, teams.length]);
+    fetchTeams().then((ts) => {
+      setTeams(ts);
+      const fav = Object.keys(snapshot.probs).sort(
+        (a, b) => snapshot.probs[b].champ - snapshot.probs[a].champ,
+      )[0];
+      if (fav) setAdjust((a) => (Object.keys(a).length ? a : { [fav]: 0 }));
+    }).catch(() => {});
+  }, [open, teams.length, snapshot]);
 
-  // Initialise sliders to baseline once teams + defaults are known.
-  useEffect(() => {
-    if (!teams.length || Object.keys(overrides).length) return;
-    const init: Record<string, number> = {};
-    for (const name of defaultPicks) {
-      if (baseElo[name] != null) init[name] = baseElo[name];
-    }
-    setOverrides(init);
-  }, [teams, defaultPicks, baseElo, overrides]);
-
-  // Which overrides actually differ from baseline → send only those.
-  const changed = useMemo(() => {
+  const overrides = useMemo(() => {
     const out: Record<string, number> = {};
-    for (const [name, v] of Object.entries(overrides)) {
-      if (baseElo[name] == null || Math.round(v) !== Math.round(baseElo[name])) {
-        out[name] = v;
-      }
+    for (const [name, d] of Object.entries(adjust)) {
+      if (d !== 0 && baseElo[name] != null) out[name] = baseElo[name] + d;
     }
     return out;
-  }, [overrides, baseElo]);
+  }, [adjust, baseElo]);
 
-  // Debounced re-simulation when overrides change.
   useEffect(() => {
     if (!open) return;
-    if (Object.keys(changed).length === 0) {
+    if (Object.keys(overrides).length === 0) {
       setResult(null);
       return;
     }
     window.clearTimeout(debounce.current);
     debounce.current = window.setTimeout(() => {
       setBusy(true);
-      simulate({ elo_overrides: changed, n_sims: 20000 })
+      simulate({ elo_overrides: overrides, n_sims: 20000 })
         .then(setResult)
         .catch(() => {})
         .finally(() => setBusy(false));
-    }, 400);
+    }, 350);
     return () => window.clearTimeout(debounce.current);
-  }, [changed, open]);
+  }, [overrides, open]);
 
-  const reset = () => {
-    const init: Record<string, number> = {};
-    for (const name of Object.keys(overrides)) {
-      if (baseElo[name] != null) init[name] = baseElo[name];
+  const probs = result?.probs ?? snapshot.probs;
+  const baseProbs = snapshot.probs;
+
+  // Leaderboard: top N by the chosen metric, plus any adjusted team.
+  const board = useMemo(() => {
+    const ranked = Object.keys(probs).sort(
+      (a, b) => probs[b][metric] - probs[a][metric],
+    );
+    const rankOf = new Map(ranked.map((tm, i) => [tm, i + 1]));
+    const shown = ranked.slice(0, LEADERBOARD);
+    for (const tm of Object.keys(adjust)) {
+      if (!shown.includes(tm)) shown.push(tm);
     }
-    setOverrides(init);
+    const maxVal = Math.max(...shown.map((tm) => probs[tm][metric]), 1);
+    return { rows: shown, rankOf, maxVal };
+  }, [probs, metric, adjust]);
+
+  const available = Object.keys(snapshot.probs)
+    .filter((tm) => !(tm in adjust))
+    .sort((a, b) => a.localeCompare(b));
+
+  const setDelta = (team: string, d: number) =>
+    setAdjust((a) => ({ ...a, [team]: d }));
+  const remove = (team: string) =>
+    setAdjust((a) => {
+      const next = { ...a };
+      delete next[team];
+      return next;
+    });
+  const reset = () => {
+    setAdjust({});
     setResult(null);
   };
 
-  const fmt = (n: number) => `${n.toFixed(1)}%`;
-  const delta = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}`;
+  const arrow = (d: number) =>
+    d > 0.05 ? "▲" : d < -0.05 ? "▼" : "";
+  const dClass = (d: number) =>
+    d > 0.05 ? "delta-pos" : d < -0.05 ? "delta-neg" : "subtle";
 
   return (
     <section className="panel">
@@ -103,84 +116,112 @@ export function WhatIf({ snapshot, mode }: Props) {
           {open ? t.hide : t.show}
         </button>
       </h2>
+
       {open && (
         <>
-          <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginTop: 0 }}>
+          <p className="subtle" style={{ marginTop: 0 }}>
             {t.whatIfIntro}
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>{t.whatIfPickTeams}</th>
-                <th>{t.whatIfElo}</th>
-                <th>{t.champion}</th>
-                <th>{t.whatIfDelta}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(overrides).map((name) => {
-                const base = baseElo[name];
-                const cur = overrides[name];
-                const d = base != null ? cur - base : 0;
-                const newP = result?.probs[name];
-                const baseP = snapshot.probs[name];
-                const dChamp =
-                  newP && baseP ? newP.champ - baseP.champ : 0;
-                return (
-                  <tr key={name} className={name === "Sweden" && mode === "sv" ? "focus-row" : ""}>
-                    <td>
-                      <span className="flag">{flag(name)}</span>
-                      {name}
-                    </td>
-                    <td style={{ textAlign: "left" }}>
-                      <input
-                        type="range"
-                        min={base != null ? base - ELO_RANGE : 1500}
-                        max={base != null ? base + ELO_RANGE : 2300}
-                        step={5}
-                        value={Math.round(cur)}
-                        disabled={base == null}
-                        onChange={(e) =>
-                          setOverrides((o) => ({
-                            ...o,
-                            [name]: Number(e.target.value),
-                          }))
-                        }
-                        style={{ width: 130, verticalAlign: "middle" }}
-                      />
-                      <span style={{ marginLeft: 8 }}>
-                        {Math.round(cur)}
-                        {Math.abs(d) >= 1 && (
-                          <span style={{ color: "var(--accent)" }}>
-                            {" "}
-                            ({delta(d)})
-                          </span>
-                        )}
-                      </span>
-                    </td>
-                    <td>
-                      {newP ? fmt(newP.champ) : baseP ? fmt(baseP.champ) : "—"}
-                    </td>
-                    <td
-                      style={{
-                        color:
-                          dChamp > 0.05
-                            ? "var(--pos)"
-                            : dChamp < -0.05
-                              ? "var(--neg)"
-                              : "var(--muted)",
-                      }}
-                    >
-                      {newP && baseP ? delta(dChamp) : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+
+          {/* adjusters */}
+          <div style={{ marginBottom: "0.4rem" }}>
+            {Object.keys(adjust).map((team) => {
+              const d = adjust[team];
+              return (
+                <div className="lab-adjuster" key={team}>
+                  <span className="name">
+                    {flag(team)} {displayName(team, mode)}
+                  </span>
+                  <input
+                    type="range"
+                    min={-ADJUST_MAX}
+                    max={ADJUST_MAX}
+                    step={10}
+                    value={d}
+                    disabled={baseElo[team] == null}
+                    onChange={(e) => setDelta(team, Number(e.target.value))}
+                  />
+                  <span className="amount">
+                    <span className={d > 0 ? "delta-pos" : d < 0 ? "delta-neg" : "subtle"}>
+                      {d > 0 ? "+" : ""}
+                      {d}
+                    </span>
+                    {baseElo[team] != null && (
+                      <span className="subtle"> · {Math.round(baseElo[team] + d)}</span>
+                    )}
+                  </span>
+                  <button
+                    className="lab-remove"
+                    onClick={() => remove(team)}
+                    aria-label="remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+            <select
+              className="chip"
+              value=""
+              onChange={(e) => {
+                if (e.target.value) setDelta(e.target.value, 0);
+              }}
+              style={{ appearance: "auto", marginTop: "0.4rem" }}
+            >
+              <option value="">+ {t.focusAdd}</option>
+              {available.map((tm) => (
+                <option key={tm} value={tm}>
+                  {tm}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* metric selector */}
+          <div className="metric-tabs">
+            {METRICS.map((m) => (
+              <button
+                key={m}
+                className={`btn${metric === m ? " active" : ""}`}
+                onClick={() => setMetric(m)}
+              >
+                {t.metrics[m]}
+              </button>
+            ))}
+          </div>
+
+          {/* live leaderboard */}
+          <div>
+            {board.rows.map((team) => {
+              const val = probs[team][metric];
+              const d = val - baseProbs[team][metric];
+              return (
+                <div
+                  key={team}
+                  className={`lab-row${team in adjust ? " adjusted" : ""}`}
+                >
+                  <span className="lab-rank">{board.rankOf.get(team)}</span>
+                  <span className="lab-team">
+                    {flag(team)} {displayName(team, mode)}
+                  </span>
+                  <span className="lab-track">
+                    <span
+                      className="lab-fill"
+                      style={{ width: `${(val / board.maxVal) * 100}%` }}
+                    />
+                  </span>
+                  <span className="lab-val">{val.toFixed(1)}%</span>
+                  <span className={`lab-delta ${dClass(d)}`}>
+                    {arrow(d)} {Math.abs(d) >= 0.05 ? Math.abs(d).toFixed(1) : ""}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
           <div
             style={{
-              marginTop: "0.8rem",
+              marginTop: "0.9rem",
               display: "flex",
               alignItems: "center",
               gap: "1rem",
@@ -189,11 +230,7 @@ export function WhatIf({ snapshot, mode }: Props) {
             <button className="btn" onClick={reset}>
               {t.whatIfReset}
             </button>
-            {busy && (
-              <span style={{ color: "var(--muted)", fontSize: "0.82rem" }}>
-                {t.whatIfSimulating}
-              </span>
-            )}
+            {busy && <span className="subtle">{t.whatIfSimulating}</span>}
           </div>
         </>
       )}
