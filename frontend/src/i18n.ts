@@ -59,6 +59,7 @@ interface Strings {
   // The model's own most-likely prediction
   modelPickTitle: string;
   modelPickIntro: string;
+  modelName: string;
   tierChampion: string;
   tierRunnerUp: string;
   tierSemi: string;
@@ -134,6 +135,7 @@ export const STRINGS: Record<Mode, Strings> = {
     modelPickTitle: "Modellens tippning",
     modelPickIntro:
       "Simuleringens mest sannolika lag i varje skede just nu — modellens egen tippning.",
+    modelName: "Modellen",
     tierChampion: "Mästare",
     tierRunnerUp: "Tvåa",
     tierSemi: "Semifinal",
@@ -207,6 +209,7 @@ export const STRINGS: Record<Mode, Strings> = {
     modelPickTitle: "The model's prediction",
     modelPickIntro:
       "The simulation's most likely team at each stage right now — the model's own bracket.",
+    modelName: "The model",
     tierChampion: "Champion",
     tierRunnerUp: "Runner-up",
     tierSemi: "Semifinal",

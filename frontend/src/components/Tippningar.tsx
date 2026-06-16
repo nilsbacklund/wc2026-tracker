@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import type { Mode, Snapshot } from "../types";
 import { STRINGS, displayName } from "../i18n";
 import { flag } from "../flags";
-import { TIPPNINGAR } from "../tippningar";
+import { TIPPNINGAR, type Tippning } from "../tippningar";
+import { modelBracket } from "../modelPick";
 
 interface Props {
   snapshot: Snapshot;
@@ -19,14 +20,37 @@ export function Tippningar({ snapshot, mode }: Props) {
   const ranked = useMemo(() => {
     const p = (team: string, metric: "champ" | "final" | "top4" | "qf") =>
       (probs[team]?.[metric] ?? 0) / 100;
-    return TIPPNINGAR.map((tip) => {
+    const score = (tip: Tippning) => {
       let exp = POINTS.champ * p(tip.champion, "champ");
       if (tip.runnerUp) exp += POINTS.final * p(tip.runnerUp, "final");
       for (const tm of tip.semis) exp += POINTS.top4 * p(tm, "top4");
       for (const tm of tip.quarters) exp += POINTS.qf * p(tm, "qf");
-      return { tip, exp, champPct: probs[tip.champion]?.champ ?? 0 };
-    }).sort((a, b) => b.exp - a.exp);
-  }, [probs]);
+      return exp;
+    };
+
+    // The model competes too, as a benchmark entry.
+    const mb = modelBracket(probs);
+    const modelTip: Tippning = {
+      person: t.modelName,
+      champion: mb.champion,
+      runnerUp: mb.runnerUp,
+      semis: mb.semis,
+      quarters: mb.quarters,
+    };
+
+    const entries = [
+      ...TIPPNINGAR.map((tip) => ({ tip, isModel: false })),
+      { tip: modelTip, isModel: true },
+    ].map(({ tip, isModel }) => ({
+      tip,
+      isModel,
+      exp: score(tip),
+      champPct: probs[tip.champion]?.champ ?? 0,
+    }));
+    entries.sort((a, b) => b.exp - a.exp);
+    const topHuman = entries.find((e) => !e.isModel);
+    return entries.map((e) => ({ ...e, isLeader: e === topHuman }));
+  }, [probs, t.modelName]);
 
   if (!ranked.length) return null;
   const maxExp = Math.max(...ranked.map((r) => r.exp), 0.01);
@@ -38,18 +62,18 @@ export function Tippningar({ snapshot, mode }: Props) {
         {t.tippIntro}
       </p>
       <div>
-        {ranked.map(({ tip, exp, champPct }, i) => (
+        {ranked.map(({ tip, exp, champPct, isModel, isLeader }, i) => (
           <div
             key={tip.person}
-            className={`lab-row${i === 0 ? " adjusted" : ""}`}
+            className={`lab-row${isModel ? " adjusted" : ""}`}
             style={{ alignItems: "center" }}
           >
             <span className="lab-rank">{i + 1}</span>
-            <span className="lab-team" style={{ width: 96, fontWeight: 600 }}>
-              {i === 0 ? "🥇 " : ""}
+            <span className="lab-team" style={{ width: 110, fontWeight: 600 }}>
+              {isModel ? "🤖 " : isLeader ? "🥇 " : ""}
               {tip.person}
             </span>
-            <span className="lab-track" style={{ maxWidth: 320 }}>
+            <span className="lab-track" style={{ maxWidth: 300 }}>
               <span
                 className="lab-fill"
                 style={{ width: `${(exp / maxExp) * 100}%` }}
