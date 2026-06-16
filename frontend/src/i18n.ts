@@ -56,6 +56,13 @@ interface Strings {
   tippExpected: string;
   tippChampionPick: string;
   tippLeader: string;
+  // The model's own most-likely prediction
+  modelPickTitle: string;
+  modelPickIntro: string;
+  tierChampion: string;
+  tierRunnerUp: string;
+  tierSemi: string;
+  tierQuarter: string;
 }
 
 export const STRINGS: Record<Mode, Strings> = {
@@ -124,6 +131,13 @@ export const STRINGS: Record<Mode, Strings> = {
     tippExpected: "Förväntade poäng",
     tippChampionPick: "Mästartips",
     tippLeader: "Leder",
+    modelPickTitle: "Modellens tippning",
+    modelPickIntro:
+      "Simuleringens mest sannolika lag i varje skede just nu — modellens egen tippning.",
+    tierChampion: "Mästare",
+    tierRunnerUp: "Tvåa",
+    tierSemi: "Semifinal",
+    tierQuarter: "Kvartsfinal",
   },
   neutral: {
     title: "World Cup 2026 – Live Odds",
@@ -190,6 +204,13 @@ export const STRINGS: Record<Mode, Strings> = {
     tippExpected: "Expected points",
     tippChampionPick: "Champion pick",
     tippLeader: "Leads",
+    modelPickTitle: "The model's prediction",
+    modelPickIntro:
+      "The simulation's most likely team at each stage right now — the model's own bracket.",
+    tierChampion: "Champion",
+    tierRunnerUp: "Runner-up",
+    tierSemi: "Semifinal",
+    tierQuarter: "Quarterfinal",
   },
 };
 

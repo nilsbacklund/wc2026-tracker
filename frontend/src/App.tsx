@@ -16,6 +16,7 @@ import { TeamFocus } from "./components/TeamFocus";
 import { FocusPicker } from "./components/FocusPicker";
 import { VitalMatches } from "./components/VitalMatches";
 import { Tippningar } from "./components/Tippningar";
+import { ModelPick } from "./components/ModelPick";
 import { WhatIf } from "./components/WhatIf";
 import { subscribeToSnapshots } from "./realtime";
 
@@ -169,6 +170,8 @@ export default function App() {
       )}
 
       <Tippningar snapshot={latest} mode={mode} />
+
+      <ModelPick snapshot={latest} mode={mode} />
 
       {importance && <VitalMatches importance={importance} mode={mode} />}
 
