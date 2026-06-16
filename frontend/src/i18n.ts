@@ -50,6 +50,12 @@ interface Strings {
   vitalIntro: string;
   vitalFor: string;
   biggestMover: string;
+  // Family predictions (tippningar)
+  tippTitle: string;
+  tippIntro: string;
+  tippExpected: string;
+  tippChampionPick: string;
+  tippLeader: string;
 }
 
 export const STRINGS: Record<Mode, Strings> = {
@@ -112,6 +118,12 @@ export const STRINGS: Record<Mode, Strings> = {
       "Kommande matcher rangordnade efter hur mycket resultatet väntas flytta oddsen.",
     vitalFor: "Viktigaste matcherna för",
     biggestMover: "Störst rörelse",
+    tippTitle: "Familjens tippning",
+    tippIntro:
+      "Varje tippning poängsatt mot simuleringen (mästare 8p, final 5p, semi 3p, kvart 2p). Mest sannolik högst upp.",
+    tippExpected: "Förväntade poäng",
+    tippChampionPick: "Mästartips",
+    tippLeader: "Leder",
   },
   neutral: {
     title: "World Cup 2026 – Live Odds",
@@ -172,6 +184,12 @@ export const STRINGS: Record<Mode, Strings> = {
       "Upcoming matches ranked by how much their result is expected to move the odds.",
     vitalFor: "Most decisive matches for",
     biggestMover: "Biggest swing",
+    tippTitle: "Family predictions",
+    tippIntro:
+      "Each prediction scored against the simulation (champion 8, final 5, semi 3, quarter 2 pts). Most likely on top.",
+    tippExpected: "Expected points",
+    tippChampionPick: "Champion pick",
+    tippLeader: "Leads",
   },
 };
 
