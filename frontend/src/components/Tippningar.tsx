@@ -10,21 +10,29 @@ interface Props {
   mode: Mode;
 }
 
-// Points awarded if a pick reaches the round it was slotted in.
-const POINTS = { champ: 8, final: 5, top4: 3, qf: 2 } as const;
-
 export function Tippningar({ snapshot, mode }: Props) {
   const t = STRINGS[mode];
   const probs = snapshot.probs;
 
   const ranked = useMemo(() => {
+    // Family scoring: +1 per picked team that reaches the round it's placed in
+    // (a pick at tier T is implicitly predicted to reach QF/SF/Final up to T),
+    // +2 for the correct champion, +1 for the correct runner-up. A certain
+    // champion therefore scores QF+SF+Final (3) + 2 = 5.
     const p = (team: string, metric: "champ" | "final" | "top4" | "qf") =>
       (probs[team]?.[metric] ?? 0) / 100;
     const score = (tip: Tippning) => {
-      let exp = POINTS.champ * p(tip.champion, "champ");
-      if (tip.runnerUp) exp += POINTS.final * p(tip.runnerUp, "final");
-      for (const tm of tip.semis) exp += POINTS.top4 * p(tm, "top4");
-      for (const tm of tip.quarters) exp += POINTS.qf * p(tm, "qf");
+      const c = tip.champion;
+      // champion: reaches QF, SF, Final + winner bonus
+      let exp = p(c, "qf") + p(c, "top4") + p(c, "final") + 2 * p(c, "champ");
+      if (tip.runnerUp) {
+        const r = tip.runnerUp;
+        // runner-up: reaches QF, SF, Final + bonus for being exactly 2nd
+        exp += p(r, "qf") + p(r, "top4") + p(r, "final");
+        exp += p(r, "final") - p(r, "champ"); // P(exactly runner-up)
+      }
+      for (const tm of tip.semis) exp += p(tm, "qf") + p(tm, "top4");
+      for (const tm of tip.quarters) exp += p(tm, "qf");
       return exp;
     };
 

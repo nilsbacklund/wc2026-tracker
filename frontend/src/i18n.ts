@@ -128,7 +128,7 @@ export const STRINGS: Record<Mode, Strings> = {
     biggestMover: "Störst rörelse",
     tippTitle: "Familjens tippning",
     tippIntro:
-      "Varje tippning poängsatt mot simuleringen (mästare 8p, final 5p, semi 3p, kvart 2p). Mest sannolik högst upp.",
+      "1 poäng för varje tippat lag som når sitt steg, +2 för rätt mästare och +1 för rätt tvåa. Förväntade poäng mot simuleringen — mest sannolik högst upp.",
     tippExpected: "Förväntade poäng",
     tippChampionPick: "Mästartips",
     tippLeader: "Leder",
@@ -202,7 +202,7 @@ export const STRINGS: Record<Mode, Strings> = {
     biggestMover: "Biggest swing",
     tippTitle: "Family predictions",
     tippIntro:
-      "Each prediction scored against the simulation (champion 8, final 5, semi 3, quarter 2 pts). Most likely on top.",
+      "1 point per picked team that reaches its round, +2 for the correct champion and +1 for the correct runner-up. Expected points vs the simulation — most likely on top.",
     tippExpected: "Expected points",
     tippChampionPick: "Champion pick",
     tippLeader: "Leads",
