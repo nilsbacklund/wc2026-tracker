@@ -205,9 +205,11 @@ def run_sims(spec=None, state=None, n=20000, seed=2026):
         for m in ms:
             counts[stage] += np.bincount(winners[m], minlength=nt)
     counts["champ"] = np.bincount(winners[104], minlength=nt)
+    counts["third"] = np.bincount(winners[103], minlength=nt)  # 3rd-place match
 
     probs = {team: {stage: round(100.0 * counts[stage][i] / n, 3)
-                    for stage in ("advance", "r16", "qf", "top4", "final", "champ")}
+                    for stage in ("advance", "r16", "qf", "top4", "final",
+                                  "champ", "third")}
              for i, team in enumerate(t.teams)}
     n_finished = sum(1 for m in matches if m.get("status") == "finished")
     n_live = sum(1 for m in matches if m.get("status") == "in_play")

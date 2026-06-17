@@ -5,6 +5,7 @@ export interface TeamProbs {
   top4: number;
   final: number;
   champ: number;
+  third: number; // 3rd-place probability
 }
 
 export type Metric = keyof TeamProbs;

@@ -19,7 +19,7 @@ export function Tippningar({ snapshot, mode }: Props) {
     // (a pick at tier T is implicitly predicted to reach QF/SF/Final up to T),
     // +2 for the correct champion, +1 for the correct runner-up. A certain
     // champion therefore scores QF+SF+Final (3) + 2 = 5.
-    const p = (team: string, metric: "champ" | "final" | "top4" | "qf") =>
+    const p = (team: string, metric: "champ" | "final" | "top4" | "qf" | "third") =>
       (probs[team]?.[metric] ?? 0) / 100;
     const score = (tip: Tippning) => {
       const c = tip.champion;
@@ -31,7 +31,12 @@ export function Tippningar({ snapshot, mode }: Props) {
         exp += p(r, "qf") + p(r, "top4") + p(r, "final");
         exp += p(r, "final") - p(r, "champ"); // P(exactly runner-up)
       }
-      for (const tm of tip.semis) exp += p(tm, "qf") + p(tm, "top4");
+      // The first Semi pick is the predicted 3rd-place finisher (+1 bonus if
+      // exactly 3rd); the second is the other (4th) semifinalist.
+      tip.semis.forEach((tm, idx) => {
+        exp += p(tm, "qf") + p(tm, "top4");
+        if (idx === 0) exp += p(tm, "third");
+      });
       for (const tm of tip.quarters) exp += p(tm, "qf");
       return exp;
     };

@@ -94,6 +94,7 @@ export const STRINGS: Record<Mode, Strings> = {
       top4: "Topp 4",
       final: "Final",
       champ: "Guld",
+      third: "Trea",
     },
     whatIf: "Tänk om?",
     whatIfIntro:
@@ -128,7 +129,7 @@ export const STRINGS: Record<Mode, Strings> = {
     biggestMover: "Störst rörelse",
     tippTitle: "Familjens tippning",
     tippIntro:
-      "1 poäng för varje tippat lag som når sitt steg, +2 för rätt mästare och +1 för rätt tvåa. Förväntade poäng mot simuleringen — mest sannolik högst upp.",
+      "1 poäng för varje tippat lag som når sitt steg, +2 för rätt mästare, +1 för rätt tvåa och +1 för rätt trea (första semi-laget). Förväntade poäng mot simuleringen — mest sannolik högst upp.",
     tippExpected: "Förväntade poäng",
     tippChampionPick: "Mästartips",
     tippLeader: "Leder",
@@ -168,6 +169,7 @@ export const STRINGS: Record<Mode, Strings> = {
       top4: "Top 4",
       final: "Final",
       champ: "Champion",
+      third: "Third",
     },
     whatIf: "What if?",
     whatIfIntro:
@@ -202,7 +204,7 @@ export const STRINGS: Record<Mode, Strings> = {
     biggestMover: "Biggest swing",
     tippTitle: "Family predictions",
     tippIntro:
-      "1 point per picked team that reaches its round, +2 for the correct champion and +1 for the correct runner-up. Expected points vs the simulation — most likely on top.",
+      "1 point per picked team that reaches its round, +2 for the correct champion, +1 for the correct runner-up and +1 for the correct third place (first Semi pick). Expected points vs the simulation — most likely on top.",
     tippExpected: "Expected points",
     tippChampionPick: "Champion pick",
     tippLeader: "Leads",
