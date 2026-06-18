@@ -42,7 +42,7 @@ export function OddsTable({ snapshot, mode, focus, limit = 16 }: Props) {
               {METRIC_ORDER.map((m) => (
                 <td key={m} className="bar-cell">
                   <div className="bar" style={{ width: `${p[m]}%` }} />
-                  <span>{p[m].toFixed(1)}</span>
+                  <span>{p[m].toFixed(2)}</span>
                 </td>
               ))}
             </tr>

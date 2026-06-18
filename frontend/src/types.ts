@@ -69,7 +69,15 @@ export interface MatchImpact {
   away: string | null;
   group: string | null;
   kickoff_utc: string | null;
-  outcomes: { label: string; prob: number; score: { home: number; away: number } }[];
+  outcomes: {
+    label: string;
+    prob: number;
+    score: { home: number; away: number };
+    home_adv: number;
+    home_champ: number;
+    away_adv: number;
+    away_champ: number;
+  }[];
   total: { champ: number; advance: number };
   teams: Record<string, { champ: MatchImpactSwing; advance: MatchImpactSwing }>;
 }
@@ -80,3 +88,8 @@ export interface Importance {
 }
 
 export type ImpactMetric = "advance" | "champ";
+
+export interface Bracket {
+  r32: { match: number; home: string | null; away: string | null }[];
+  elo: Record<string, number>;
+}

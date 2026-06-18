@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Importance, Match, Mode, Snapshot, StandingRow } from "./types";
+import type { Bracket as BracketData, Importance, Match, Mode, Snapshot, StandingRow } from "./types";
 import { STRINGS } from "./i18n";
 import {
+  fetchBracket,
   fetchHistory,
   fetchImportance,
   fetchLatestOdds,
@@ -17,7 +18,7 @@ import { FocusPicker } from "./components/FocusPicker";
 import { VitalMatches } from "./components/VitalMatches";
 import { Tippningar } from "./components/Tippningar";
 import { ModelPick } from "./components/ModelPick";
-import { WhatIf } from "./components/WhatIf";
+import { Bracket } from "./components/Bracket";
 import { subscribeToSnapshots } from "./realtime";
 
 type Appearance = "light" | "dark";
@@ -52,6 +53,7 @@ export default function App() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Record<string, StandingRow[]>>({});
   const [importance, setImportance] = useState<Importance | null>(null);
+  const [bracket, setBracket] = useState<BracketData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,12 +73,13 @@ export default function App() {
     let active = true;
     const load = async () => {
       try {
-        const [l, h, m, s, imp] = await Promise.all([
+        const [l, h, m, s, imp, br] = await Promise.all([
           fetchLatestOdds(),
           fetchHistory(),
           fetchMatches(),
           fetchStandings(),
           fetchImportance().catch(() => null),
+          fetchBracket().catch(() => null),
         ]);
         if (!active) return;
         setLatest(l);
@@ -84,6 +87,7 @@ export default function App() {
         setMatches(m);
         setStandings(s);
         setImportance(imp);
+        setBracket(br);
         setError(null);
       } catch (e) {
         if (active) setError(String(e));
@@ -173,9 +177,12 @@ export default function App() {
 
       <ModelPick snapshot={latest} mode={mode} />
 
+      {bracket && bracket.r32.length > 0 && (
+        <Bracket bracket={bracket} mode={mode} />
+      )}
+
       {importance && <VitalMatches importance={importance} mode={mode} />}
 
-      <WhatIf snapshot={latest} mode={mode} />
 
       <section className="panel">
         <h2>{t.raceTitle}</h2>

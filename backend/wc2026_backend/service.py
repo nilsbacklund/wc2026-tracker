@@ -5,8 +5,10 @@ a Store so the live loop, CLI, and API all share one code path.
 """
 from wc2026 import elo as elo_rule
 from wc2026 import model
+from wc2026 import thirds
 from wc2026.simulate import default_spec, run_sims
-from wc2026.structure import AMERICAS, HOSTS, TEAMS
+from wc2026.structure import (AMERICAS, BRACKET, GROUP_LETTERS, HOSTS,
+                              R32_MATCHES, TEAMS)
 
 from .sources import eloratings, espn
 
@@ -240,8 +242,15 @@ def match_importance(store, n=6000, max_matches=14):
         for label, prob, score in outs:
             probs_o = run_sims(spec=spec, state=_force(state, m["id"], score),
                                n=n, seed=2026)["probs"]
-            meta.append({"label": label, "prob": round(prob, 3),
-                         "score": score})
+            # Capture the two participants' odds under this outcome, so the UI
+            # can explain "how the scores need to end up."
+            meta.append({
+                "label": label, "prob": round(prob, 3), "score": score,
+                "home_adv": round(probs_o[m["home"]]["advance"], 1),
+                "home_champ": round(probs_o[m["home"]]["champ"], 2),
+                "away_adv": round(probs_o[m["away"]]["advance"], 1),
+                "away_champ": round(probs_o[m["away"]]["champ"], 2),
+            })
             for k in METRICS_IMPORTANCE:
                 acc = 0.0
                 for t in teams:
@@ -268,6 +277,66 @@ def match_importance(store, n=6000, max_matches=14):
 def compute_and_store_importance(store, n=6000, max_matches=14):
     data = match_importance(store, n=n, max_matches=max_matches)
     store.set_analysis("importance", data)
+    return data
+
+
+def most_likely_bracket(store, n=20000):
+    """The 'favorites advance' knockout bracket.
+
+    Group standings come from the Monte Carlo (most likely 1st/2nd/3rd per
+    group); the best-8 thirds fill the R32 third-place slots; the result is the
+    16 Round-of-32 pairings. The frontend resolves the rest of the tree by
+    effective Elo (so it can also flip matches to explore scenarios), so we
+    also return each team's effective rating. Real R32 pairings override the
+    projection once a match's teams are known.
+    """
+    spec = spec_from_store(store)
+    res = run_sims(spec=spec, state=store.engine_state(), n=n, seed=2026,
+                   with_groups=True)
+    gp, probs = res["group_pos"], res["probs"]
+    info = spec["teams"]
+
+    def eff(team):
+        return round(float(model.effective_rating(
+            info[team]["elo"], info[team]["host"], info[team]["americas"])), 1)
+
+    first, second, third = {}, {}, {}
+    for g in GROUP_LETTERS:
+        teams_g = list(gp[g])
+        first[g] = max(teams_g, key=lambda tm: gp[g][tm]["p1"])
+        second[g] = max((tm for tm in teams_g if tm != first[g]),
+                        key=lambda tm: gp[g][tm]["p2"])
+        third[g] = max((tm for tm in teams_g if tm not in (first[g], second[g])),
+                       key=lambda tm: gp[g][tm]["p3"])
+
+    # Best 8 third-placed teams: those whose 3rd-place team is likeliest to
+    # advance overall. Then fill the third-place R32 slots deterministically.
+    qual = sorted(GROUP_LETTERS, key=lambda g: probs[third[g]]["advance"],
+                  reverse=True)[:8]
+    amap = thirds.assign(tuple(sorted(qual)))
+
+    def slot_team(slot):
+        pos, gl = slot[0], slot[1]
+        return {"1": first, "2": second}[pos][gl]
+
+    known = {m["id"]: m for m in store.all_matches()}
+    r32 = []
+    for m in R32_MATCHES:
+        real = known.get(m, {})
+        if real.get("home") and real.get("away"):  # real pairing once known
+            home, away = real["home"], real["away"]
+        else:
+            a_slot, b_slot = BRACKET[m]
+            home = slot_team(a_slot)
+            away = third[amap[m]] if b_slot.startswith("3:") else slot_team(b_slot)
+        r32.append({"match": m, "home": home, "away": away})
+
+    return {"r32": r32, "elo": {tm: eff(tm) for tm in info}}
+
+
+def compute_and_store_bracket(store, n=20000):
+    data = most_likely_bracket(store, n=n)
+    store.set_analysis("bracket", data)
     return data
 
 

@@ -122,7 +122,7 @@ export function RaceChart({ history, latest, matches, mode, focus }: Props) {
                 title: (items) =>
                   items.length ? pointLabels[items[0].dataIndex] ?? "" : "",
                 label: (ctx) =>
-                  `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(1)}%`,
+                  `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}%`,
               },
             },
           },

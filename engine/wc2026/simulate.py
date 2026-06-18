@@ -123,12 +123,14 @@ def _ko_winner(tournament, team_a, team_b, n, rng, real=None):
     return np.where(win_a, team_a, team_b)
 
 
-def run_sims(spec=None, state=None, n=20000, seed=2026):
+def run_sims(spec=None, state=None, n=20000, seed=2026, with_groups=False):
     """Simulate the tournament N times conditioned on `state`.
 
     state: {"matches": [...]} or a plain list of match dicts (see backend
     schema). Returns {"probs": {team: {advance, r16, qf, top4, final,
-    champ}}, "meta": {...}} with probabilities in percent.
+    champ}}, "meta": {...}} with probabilities in percent. When with_groups is
+    set, also returns "group_pos": {group: {team: {p1, p2, p3}}} — the
+    probability each team finishes 1st/2nd/3rd in its group.
     """
     spec = spec or default_spec()
     t = _Tournament(spec)
@@ -213,7 +215,20 @@ def run_sims(spec=None, state=None, n=20000, seed=2026):
              for i, team in enumerate(t.teams)}
     n_finished = sum(1 for m in matches if m.get("status") == "finished")
     n_live = sum(1 for m in matches if m.get("status") == "in_play")
-    return {"probs": probs,
-            "meta": {"n_sims": n, "seed": seed,
-                     "conditioned_finished": n_finished,
-                     "conditioned_in_play": n_live}}
+    result = {"probs": probs,
+              "meta": {"n_sims": n, "seed": seed,
+                       "conditioned_finished": n_finished,
+                       "conditioned_in_play": n_live}}
+    if with_groups:
+        group_pos = {}
+        for gi, g in enumerate(GROUP_LETTERS):
+            c1 = np.bincount(first[gi], minlength=nt)
+            c2 = np.bincount(second[gi], minlength=nt)
+            c3 = np.bincount(third[gi], minlength=nt)
+            group_pos[g] = {
+                t.teams[i]: {"p1": round(100.0 * c1[i] / n, 2),
+                             "p2": round(100.0 * c2[i] / n, 2),
+                             "p3": round(100.0 * c3[i] / n, 2)}
+                for i in (t.idx[name] for name in t.groups[g])}
+        result["group_pos"] = group_pos
+    return result

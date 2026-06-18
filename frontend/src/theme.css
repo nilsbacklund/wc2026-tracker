@@ -582,6 +582,82 @@ input[type="range"] {
   margin: 0.2rem 0 1rem;
 }
 
+/* ---------- knockout bracket ---------- */
+.bracket {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.bracket-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 0.4rem;
+  min-width: 132px;
+  flex: 1;
+}
+
+.bracket-col h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.bracket-match {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bracket-team {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.45rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid var(--border);
+}
+
+.bracket-team:last-child {
+  border-bottom: none;
+}
+
+.bracket-team:hover {
+  background: var(--panel-hover);
+}
+
+.bracket-team.win {
+  background: var(--accent-weak);
+  font-weight: 700;
+}
+
+.bracket-team.out {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.bracket-champion {
+  align-self: center;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-weak);
+  white-space: nowrap;
+}
+
 .metric-tabs .btn {
   padding: 0.3rem 0.7rem;
   font-size: 0.78rem;

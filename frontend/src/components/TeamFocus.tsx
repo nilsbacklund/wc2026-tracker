@@ -75,7 +75,7 @@ export function TeamFocus({ team, snapshot, matches, mode, importance }: Props) 
   const name = displayName(team, mode);
   const scen = result?.probs[team];
   const maxVal = Math.max(...METRIC_ORDER.map((m) => base[m]), 1);
-  const delta = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}`;
+  const delta = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}`;
   const deltaClass = (d: number) =>
     d > 0.05 ? "delta-pos" : d < -0.05 ? "delta-neg" : "";
 
@@ -112,7 +112,7 @@ export function TeamFocus({ team, snapshot, matches, mode, importance }: Props) 
                 />
               </div>
               <span className="funnel-value">
-                {cur.toFixed(1)}%
+                {cur.toFixed(2)}%
                 {scen && (
                   <span
                     className={deltaClass(scen[m] - base[m])}
@@ -248,9 +248,9 @@ export function TeamFocus({ team, snapshot, matches, mode, importance }: Props) 
               {(["advance", "champ"] as const).map((m) => (
                 <div key={m} className="stat-card" style={{ flex: "1 1 160px" }}>
                   <div className="label">{t.metrics[m]}</div>
-                  <div className="value">{scen[m].toFixed(1)}%</div>
+                  <div className="value">{scen[m].toFixed(2)}%</div>
                   <div className="subtle">
-                    {t.whatIfBaseline} {base[m].toFixed(1)}%{" "}
+                    {t.whatIfBaseline} {base[m].toFixed(2)}%{" "}
                     <span className={deltaClass(scen[m] - base[m])}>
                       ({delta(scen[m] - base[m])})
                     </span>

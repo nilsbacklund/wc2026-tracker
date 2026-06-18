@@ -24,7 +24,7 @@ export function ModelPick({ snapshot, mode }: Props) {
         </span>
         {flag(team)} {displayName(team, mode)}
       </span>
-      <span className="subtle">{probs[team][metric].toFixed(1)}%</span>
+      <span className="subtle">{probs[team][metric].toFixed(2)}%</span>
     </div>
   );
 

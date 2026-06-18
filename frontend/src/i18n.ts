@@ -48,6 +48,7 @@ interface Strings {
   // Most decisive matches
   vitalMatches: string;
   vitalIntro: string;
+  vitalExpandHint: string;
   vitalFor: string;
   biggestMover: string;
   // Family predictions (tippningar)
@@ -64,6 +65,11 @@ interface Strings {
   tierRunnerUp: string;
   tierSemi: string;
   tierQuarter: string;
+  // Bracket
+  bracketTitle: string;
+  bracketIntro: string;
+  thirdPlace: string;
+  rounds: { r32: string; r16: string; qf: string; sf: string; final: string };
 }
 
 export const STRINGS: Record<Mode, Strings> = {
@@ -125,6 +131,7 @@ export const STRINGS: Record<Mode, Strings> = {
     vitalMatches: "Mest avgörande matcher",
     vitalIntro:
       "Kommande matcher rangordnade efter hur mycket resultatet väntas flytta oddsen.",
+    vitalExpandHint: "Klicka på en match för att se hur resultatet påverkar lagen.",
     vitalFor: "Viktigaste matcherna för",
     biggestMover: "Störst rörelse",
     tippTitle: "Familjens tippning",
@@ -141,6 +148,11 @@ export const STRINGS: Record<Mode, Strings> = {
     tierRunnerUp: "Tvåa",
     tierSemi: "Semifinal",
     tierQuarter: "Kvartsfinal",
+    bracketTitle: "Troligaste slutspelsträdet",
+    bracketIntro:
+      "Favoriten (efter Elo) går vidare i varje match. Klicka på ett lag för att skicka det vidare och se hur trädet ändras.",
+    thirdPlace: "Trea",
+    rounds: { r32: "16-delsfinal", r16: "Åttondelsfinal", qf: "Kvartsfinal", sf: "Semifinal", final: "Final" },
   },
   neutral: {
     title: "World Cup 2026 – Live Odds",
@@ -200,6 +212,7 @@ export const STRINGS: Record<Mode, Strings> = {
     vitalMatches: "Most decisive matches",
     vitalIntro:
       "Upcoming matches ranked by how much their result is expected to move the odds.",
+    vitalExpandHint: "Click a match to see how each result affects the teams.",
     vitalFor: "Most decisive matches for",
     biggestMover: "Biggest swing",
     tippTitle: "Family predictions",
@@ -216,6 +229,11 @@ export const STRINGS: Record<Mode, Strings> = {
     tierRunnerUp: "Runner-up",
     tierSemi: "Semifinal",
     tierQuarter: "Quarterfinal",
+    bracketTitle: "Most likely bracket",
+    bracketIntro:
+      "The favorite (by Elo) advances in each match. Click a team to send them through and see the bracket change.",
+    thirdPlace: "3rd place",
+    rounds: { r32: "Round of 32", r16: "Round of 16", qf: "Quarterfinal", sf: "Semifinal", final: "Final" },
   },
 };
 

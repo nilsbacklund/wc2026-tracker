@@ -142,10 +142,11 @@ class LivePoller:
         try:
             await asyncio.to_thread(service.compute_and_store_importance,
                                     self.store)
+            await asyncio.to_thread(service.compute_and_store_bracket, self.store)
         except asyncio.CancelledError:
             raise
         except Exception:
-            log.exception("importance refresh failed")
+            log.exception("importance/bracket refresh failed")
 
     def _classify(self, changed, before, after):
         """Pick the most significant trigger among changed matches."""

@@ -99,6 +99,12 @@ def importance():
     return store().get_analysis("importance") or {"matches": []}
 
 
+@app.get("/api/bracket")
+def bracket():
+    """Stored most-likely knockout bracket (R32 seeding + effective Elo)."""
+    return store().get_analysis("bracket") or {"r32": [], "elo": {}}
+
+
 @app.get("/api/teams")
 def teams():
     elo = store().get_elo()

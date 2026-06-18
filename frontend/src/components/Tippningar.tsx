@@ -93,14 +93,14 @@ export function Tippningar({ snapshot, mode }: Props) {
               />
             </span>
             <span className="lab-val" style={{ width: 64 }}>
-              {exp.toFixed(1)} p
+              {exp.toFixed(2)} p
             </span>
             <span
               className="subtle"
               style={{ flex: "1 1 auto", textAlign: "right" }}
             >
               {t.tippChampionPick}: {flag(tip.champion)}{" "}
-              {displayName(tip.champion, mode)} ({champPct.toFixed(1)}%)
+              {displayName(tip.champion, mode)} ({champPct.toFixed(2)}%)
             </span>
           </div>
         ))}
