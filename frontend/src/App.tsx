@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Bracket as BracketData, Importance, Match, Mode, Snapshot, StandingRow } from "./types";
+import type { Bracket as BracketData, Importance, Match, Mode, Snapshot, StandingRow, WinningPaths } from "./types";
 import { STRINGS } from "./i18n";
 import {
   fetchBracket,
@@ -8,6 +8,7 @@ import {
   fetchLatestOdds,
   fetchMatches,
   fetchStandings,
+  fetchWinningPaths,
 } from "./api";
 import { OddsTable } from "./components/OddsTable";
 import { GroupStandings } from "./components/GroupStandings";
@@ -54,6 +55,7 @@ export default function App() {
   const [standings, setStandings] = useState<Record<string, StandingRow[]>>({});
   const [importance, setImportance] = useState<Importance | null>(null);
   const [bracket, setBracket] = useState<BracketData | null>(null);
+  const [winningPaths, setWinningPaths] = useState<WinningPaths | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,13 +75,14 @@ export default function App() {
     let active = true;
     const load = async () => {
       try {
-        const [l, h, m, s, imp, br] = await Promise.all([
+        const [l, h, m, s, imp, br, wp] = await Promise.all([
           fetchLatestOdds(),
           fetchHistory(),
           fetchMatches(),
           fetchStandings(),
           fetchImportance().catch(() => null),
           fetchBracket().catch(() => null),
+          fetchWinningPaths().catch(() => null),
         ]);
         if (!active) return;
         setLatest(l);
@@ -88,6 +91,7 @@ export default function App() {
         setStandings(s);
         setImportance(imp);
         setBracket(br);
+        setWinningPaths(wp);
         setError(null);
       } catch (e) {
         if (active) setError(String(e));
@@ -149,6 +153,7 @@ export default function App() {
           matches={matches}
           mode={mode}
           importance={importance}
+          winningPath={winningPaths?.teams?.["Sweden"] ?? null}
         />
       )}
 
@@ -168,6 +173,7 @@ export default function App() {
               matches={matches}
               mode={mode}
               importance={importance}
+              winningPath={winningPaths?.teams?.[team] ?? null}
             />
           ))}
         </>
@@ -178,7 +184,7 @@ export default function App() {
       <ModelPick snapshot={latest} mode={mode} />
 
       {bracket && bracket.r32.length > 0 && (
-        <Bracket bracket={bracket} mode={mode} focus={focus} />
+        <Bracket bracket={bracket} mode={mode} />
       )}
 
       {importance && <VitalMatches importance={importance} mode={mode} />}

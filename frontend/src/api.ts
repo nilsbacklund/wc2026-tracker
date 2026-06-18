@@ -1,4 +1,4 @@
-import type { Bracket, Importance, Match, Snapshot, StandingRow, TeamProbs } from "./types";
+import type { Bracket, Importance, Match, Snapshot, StandingRow, TeamProbs, WinningPaths } from "./types";
 
 const BASE = "/api";
 
@@ -29,6 +29,8 @@ export const fetchHistory = () =>
 export const fetchImportance = () => get<Importance>("/importance");
 
 export const fetchBracket = () => get<Bracket>("/bracket");
+
+export const fetchWinningPaths = () => get<WinningPaths>("/winning-paths");
 
 export interface TeamInfo {
   name: string;

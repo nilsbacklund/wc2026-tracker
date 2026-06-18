@@ -76,6 +76,7 @@ def main(argv=None):
     sub.add_parser("rebuild-history")
     sub.add_parser("importance")
     sub.add_parser("bracket")
+    sub.add_parser("winning-paths")
     p_backfill = sub.add_parser("backfill")
     p_backfill.add_argument("--start", default=service.TOURNAMENT_START)
     p_backfill.add_argument("--end", default=None)
@@ -166,6 +167,15 @@ def main(argv=None):
         print(f"computed most-likely bracket ({len(data['r32'])} R32 pairings):")
         for r in data["r32"]:
             print(f"  M{r['match']}: {r['home']} v {r['away']}")
+    elif args.cmd == "winning-paths":
+        data = service.compute_and_store_winning_paths(store)
+        for tm, d in data.items():
+            print(f"\n{tm}: {d['champ_count']} title runs / {d['sims']} sims")
+            for rk in ("r32", "r16", "qf", "sf", "final"):
+                top = d["rounds"].get(rk, [])
+                if top:
+                    s = ", ".join(f"{o['team']} {o['share']}%" for o in top)
+                    print(f"  {rk:5} vs {s}")
     elif args.cmd == "show":
         _show(store)
 

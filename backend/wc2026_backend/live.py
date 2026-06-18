@@ -143,6 +143,8 @@ class LivePoller:
             await asyncio.to_thread(service.compute_and_store_importance,
                                     self.store)
             await asyncio.to_thread(service.compute_and_store_bracket, self.store)
+            await asyncio.to_thread(service.compute_and_store_winning_paths,
+                                    self.store)
         except asyncio.CancelledError:
             raise
         except Exception:

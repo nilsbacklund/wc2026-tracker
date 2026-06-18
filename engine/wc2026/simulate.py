@@ -123,7 +123,8 @@ def _ko_winner(tournament, team_a, team_b, n, rng, real=None):
     return np.where(win_a, team_a, team_b)
 
 
-def run_sims(spec=None, state=None, n=20000, seed=2026, with_groups=False):
+def run_sims(spec=None, state=None, n=20000, seed=2026, with_groups=False,
+             path_for=None):
     """Simulate the tournament N times conditioned on `state`.
 
     state: {"matches": [...]} or a plain list of match dicts (see backend
@@ -169,6 +170,7 @@ def run_sims(spec=None, state=None, n=20000, seed=2026, with_groups=False):
 
     # --- knockout ---
     winners, losers = {}, {}
+    parts_a, parts_b = {}, {}  # participants per match (for path_for analysis)
     r32_entrants = []
 
     def resolve(slot):
@@ -193,6 +195,8 @@ def run_sims(spec=None, state=None, n=20000, seed=2026, with_groups=False):
             team_b = np.full(n, t.idx[real["away"]], dtype=np.int64)
         winners[m] = _ko_winner(t, team_a, team_b, n, rng, real)
         losers[m] = np.where(winners[m] == team_a, team_b, team_a)
+        if path_for is not None:
+            parts_a[m], parts_b[m] = team_a, team_b
         if m in R32_MATCHES:
             r32_entrants.extend([team_a, team_b])
 
@@ -231,4 +235,26 @@ def run_sims(spec=None, state=None, n=20000, seed=2026, with_groups=False):
                              "p3": round(100.0 * c3[i] / n, 2)}
                 for i in (t.idx[name] for name in t.groups[g])}
         result["group_pos"] = group_pos
+
+    # Conditional path: among iterations where `path_for` is champion, count the
+    # opponent it beat in each knockout round. Lets the caller batch many runs
+    # to estimate a rare team's most likely title route.
+    if path_for is not None and path_for in t.idx:
+        tx = t.idx[path_for]
+        champ_mask = winners[104] == tx
+        rounds = {"r32": range(73, 89), "r16": range(89, 97),
+                  "qf": range(97, 101), "sf": (101, 102), "final": (104,)}
+        counts = {}
+        for rk, ms in rounds.items():
+            opp = np.full(n, -1, dtype=np.int64)
+            for m in ms:
+                a, b = parts_a[m], parts_b[m]
+                ma = a == tx
+                opp[ma] = b[ma]
+                mb = b == tx
+                opp[mb] = a[mb]
+            sel = champ_mask & (opp >= 0)
+            counts[rk] = np.bincount(opp[sel], minlength=len(t.teams)).tolist()
+        result["path"] = {"champ_count": int(champ_mask.sum()), "counts": counts,
+                          "teams": list(t.teams)}
     return result

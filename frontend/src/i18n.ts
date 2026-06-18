@@ -71,6 +71,10 @@ interface Strings {
   bracketMakeWin: string;
   thirdPlace: string;
   rounds: { r32: string; r16: string; qf: string; sf: string; final: string };
+  // Most likely title path (conditioned on winning)
+  titlePath: string;
+  titlePathBasis: string;
+  titlePathFew: string;
 }
 
 export const STRINGS: Record<Mode, Strings> = {
@@ -152,9 +156,12 @@ export const STRINGS: Record<Mode, Strings> = {
     bracketTitle: "Troligaste slutspelsträdet",
     bracketIntro:
       "Favoriten (efter Elo) går vidare i varje match. Klicka på ett lag för att skicka det vidare och se hur trädet ändras.",
-    bracketMakeWin: "Lättaste vägen:",
+    bracketMakeWin: "Troligaste vägen:",
     thirdPlace: "Trea",
     rounds: { r32: "16-delsfinal", r16: "Åttondelsfinal", qf: "Kvartsfinal", sf: "Semifinal", final: "Final" },
+    titlePath: "Troligaste vägen till guld",
+    titlePathBasis: "Baserat på {runs} titelvinster av {sims} simuleringar.",
+    titlePathFew: "För få titelvinster i simuleringen för en pålitlig väg.",
   },
   neutral: {
     title: "World Cup 2026 – Live Odds",
@@ -234,9 +241,12 @@ export const STRINGS: Record<Mode, Strings> = {
     bracketTitle: "Most likely bracket",
     bracketIntro:
       "The favorite (by Elo) advances in each match. Click a team to send them through and see the bracket change.",
-    bracketMakeWin: "Easiest route:",
+    bracketMakeWin: "Most likely path:",
     thirdPlace: "3rd place",
     rounds: { r32: "Round of 32", r16: "Round of 16", qf: "Quarterfinal", sf: "Semifinal", final: "Final" },
+    titlePath: "Most likely path to the title",
+    titlePathBasis: "Based on {runs} title runs of {sims} simulations.",
+    titlePathFew: "Too few title runs in the simulation for a reliable path.",
   },
 };
 

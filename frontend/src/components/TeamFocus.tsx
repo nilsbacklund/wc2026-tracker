@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Importance, Match, Mode, Snapshot } from "../types";
+import type { Importance, Match, Mode, Snapshot, WinningPath } from "../types";
 import { METRIC_ORDER, STRINGS, displayName } from "../i18n";
 import { simulate } from "../api";
 import { flag } from "../flags";
@@ -10,7 +10,10 @@ interface Props {
   matches: Match[];
   mode: Mode;
   importance?: Importance | null;
+  winningPath?: WinningPath | null;
 }
+
+const PATH_ROUNDS = ["r32", "r16", "qf", "sf", "final"] as const;
 
 type Outcome = "win" | "draw" | "loss";
 
@@ -27,7 +30,7 @@ function hypoFor(m: Match, team: string, outcome: Outcome) {
 // Per-team focus panel: survival funnel across all rounds, the team's group
 // fixtures, and a "what must happen" scenario explorer. Reused for Sweden in
 // Sverigeläge and for any picked team in neutral mode.
-export function TeamFocus({ team, snapshot, matches, mode, importance }: Props) {
+export function TeamFocus({ team, snapshot, matches, mode, importance, winningPath }: Props) {
   const t = STRINGS[mode];
   const base = snapshot.probs[team];
 
@@ -126,6 +129,54 @@ export function TeamFocus({ team, snapshot, matches, mode, importance }: Props) 
           );
         })}
       </div>
+
+      {/* most likely title path (conditioned on winning the tournament) */}
+      {winningPath && (
+        <>
+          <h3 style={{ marginTop: "1.4rem" }}>{t.titlePath}</h3>
+          {winningPath.champ_count > 0 &&
+          PATH_ROUNDS.some((rk) => (winningPath.rounds[rk] ?? []).length) ? (
+            <>
+              <div>
+                {PATH_ROUNDS.map((rk) => {
+                  const opps = winningPath.rounds[rk] ?? [];
+                  if (!opps.length) return null;
+                  const top = opps[0];
+                  return (
+                    <div className="match" key={rk}>
+                      <span className="subtle">{t.rounds[rk]}</span>
+                      <span>
+                        <span style={{ opacity: 0.5, marginRight: 6 }}>{t.vs}</span>
+                        {flag(top.team)} {displayName(top.team, mode)}
+                        <span className="subtle" style={{ marginLeft: 6 }}>
+                          {top.share.toFixed(0)}%
+                        </span>
+                        {opps.slice(1, 3).map((o) => (
+                          <span
+                            key={o.team}
+                            className="subtle"
+                            style={{ marginLeft: 8, fontSize: "0.74rem" }}
+                          >
+                            · {flag(o.team)} {displayName(o.team, mode)}{" "}
+                            {o.share.toFixed(0)}%
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="subtle" style={{ marginTop: "0.5rem", fontSize: "0.74rem" }}>
+                {t.titlePathBasis
+                  .replace("{runs}", String(winningPath.champ_count))
+                  .replace("{sims}", winningPath.sims.toLocaleString())}
+              </p>
+            </>
+          ) : (
+            <p className="subtle">{t.titlePathFew}</p>
+          )}
+        </>
+      )}
 
       {/* fixtures */}
       <h3 style={{ marginTop: "1.4rem" }}>{t.fixtures}</h3>

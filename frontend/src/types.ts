@@ -93,3 +93,14 @@ export interface Bracket {
   r32: { match: number; home: string | null; away: string | null }[];
   elo: Record<string, number>;
 }
+
+export interface WinningPath {
+  team: string;
+  champ_count: number;
+  sims: number;
+  rounds: Record<string, { team: string; share: number }[]>;
+}
+
+export interface WinningPaths {
+  teams: Record<string, WinningPath>;
+}

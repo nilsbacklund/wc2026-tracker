@@ -340,6 +340,60 @@ def compute_and_store_bracket(store, n=20000):
     return data
 
 
+def winning_path(store, team, batch=20000, min_champ=300, max_batches=40):
+    """Most likely title route for `team`, conditioned on it being champion.
+
+    Batches simulations (so even a 0.2% team accumulates enough title runs
+    without huge memory) and, among the iterations where `team` wins it all,
+    reports the opponent it most often beat in each knockout round.
+    """
+    spec = spec_from_store(store)
+    state = store.engine_state()
+    total_champ = total_sims = 0
+    acc = None
+    teams_order = None
+    seed = 2026
+    for _ in range(max_batches):
+        res = run_sims(spec=spec, state=state, n=batch, seed=seed, path_for=team)
+        seed += 1
+        total_sims += batch
+        p = res.get("path")
+        if not p:
+            break
+        teams_order = p["teams"]
+        total_champ += p["champ_count"]
+        if acc is None:
+            acc = {rk: list(v) for rk, v in p["counts"].items()}
+        else:
+            for rk, v in p["counts"].items():
+                acc[rk] = [a + c for a, c in zip(acc[rk], v)]
+        if total_champ >= min_champ:
+            break
+
+    rounds = {}
+    if acc and total_champ:
+        for rk, counts in acc.items():
+            order = sorted(range(len(counts)), key=lambda i: counts[i], reverse=True)
+            rounds[rk] = [
+                {"team": teams_order[i], "share": round(100.0 * counts[i] / total_champ, 1)}
+                for i in order[:3] if counts[i] > 0]
+    return {"team": team, "champ_count": total_champ, "sims": total_sims,
+            "rounds": rounds}
+
+
+def compute_and_store_winning_paths(store, batch=20000, min_champ=300,
+                                    max_batches=40):
+    """Winning paths for Sweden + the current title favorites (likely focuses)."""
+    base = run_sims(spec=spec_from_store(store), state=store.engine_state(),
+                    n=20000)["probs"]
+    favs = sorted(base, key=lambda tm: base[tm]["champ"], reverse=True)[:6]
+    targets = list(dict.fromkeys(["Sweden", *favs]))
+    out = {tm: winning_path(store, tm, batch=batch, min_champ=min_champ,
+                            max_batches=max_batches) for tm in targets}
+    store.set_analysis("winning_paths", {"teams": out})
+    return out
+
+
 def apply_elo_updates(store):
     """Apply Elo updates for finished matches not yet applied. Idempotent."""
     applied = store.elo_applied_match_ids()

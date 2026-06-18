@@ -105,6 +105,12 @@ def bracket():
     return store().get_analysis("bracket") or {"r32": [], "elo": {}}
 
 
+@app.get("/api/winning-paths")
+def winning_paths():
+    """Per-team most-likely title route, conditioned on winning (Sweden + favorites)."""
+    return store().get_analysis("winning_paths") or {"teams": {}}
+
+
 @app.get("/api/teams")
 def teams():
     elo = store().get_elo()
