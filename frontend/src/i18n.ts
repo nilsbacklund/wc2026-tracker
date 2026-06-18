@@ -152,7 +152,7 @@ export const STRINGS: Record<Mode, Strings> = {
     bracketTitle: "Troligaste slutspelsträdet",
     bracketIntro:
       "Favoriten (efter Elo) går vidare i varje match. Klicka på ett lag för att skicka det vidare och se hur trädet ändras.",
-    bracketMakeWin: "Vinst för",
+    bracketMakeWin: "Lättaste vägen:",
     thirdPlace: "Trea",
     rounds: { r32: "16-delsfinal", r16: "Åttondelsfinal", qf: "Kvartsfinal", sf: "Semifinal", final: "Final" },
   },
@@ -234,7 +234,7 @@ export const STRINGS: Record<Mode, Strings> = {
     bracketTitle: "Most likely bracket",
     bracketIntro:
       "The favorite (by Elo) advances in each match. Click a team to send them through and see the bracket change.",
-    bracketMakeWin: "Win for",
+    bracketMakeWin: "Easiest route:",
     thirdPlace: "3rd place",
     rounds: { r32: "Round of 32", r16: "Round of 16", qf: "Quarterfinal", sf: "Semifinal", final: "Final" },
   },

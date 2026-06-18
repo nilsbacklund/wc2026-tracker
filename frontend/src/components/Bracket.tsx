@@ -44,16 +44,38 @@ export function Bracket({ bracket, mode, focus }: Props) {
   const t = STRINGS[mode];
   const [overrides, setOverrides] = useState<Record<number, string>>({});
 
-  // Force a team to win every match on its path to the title (opponents stay
-  // as the favorites) — the most-likely bracket in which that team wins.
-  const makeWin = (team: string) => {
+  // The easiest route to the title for a team: it wins its own matches, and in
+  // every other match the WEAKER team (by Elo) advances — so the team faces the
+  // weakest opponent that could plausibly reach each round.
+  const makeEasiest = (team: string) => {
     const start = bracket.r32.find((r) => r.home === team || r.away === team);
     if (!start) return;
+    const path = new Set<number>();
+    let p: number | undefined = start.match;
+    while (p != null) {
+      path.add(p);
+      p = PARENT[p];
+    }
+    const elo = bracket.elo;
+    const weaker = (a: string | null, b: string | null) =>
+      a == null ? b : b == null ? a : (elo[a] ?? 1e9) <= (elo[b] ?? 1e9) ? a : b;
+    const seed: Record<number, [string | null, string | null]> = {};
+    for (const r of bracket.r32) seed[r.match] = [r.home, r.away];
+
     const ov: Record<number, string> = {};
-    let m: number | undefined = start.match;
-    while (m != null) {
-      ov[m] = team;
-      m = PARENT[m];
+    const win: Record<number, string | null> = {};
+    const decideOne = (m: number, h: string | null, a: string | null) => {
+      const w = path.has(m) ? team : weaker(h, a);
+      if (w) ov[m] = w;
+      win[m] = w;
+    };
+    for (const m of COLUMNS[0].matches) {
+      const [h, a] = seed[m] ?? [null, null];
+      decideOne(m, h, a);
+    }
+    for (const m of [89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 104]) {
+      const [c1, c2] = FEEDERS[m];
+      decideOne(m, win[c1] ?? null, win[c2] ?? null);
     }
     setOverrides(ov);
   };
@@ -119,7 +141,7 @@ export function Bracket({ bracket, mode, focus }: Props) {
         <span>{t.bracketTitle}</span>
         <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
           {winnable.map((tm) => (
-            <button key={tm} className="btn" onClick={() => makeWin(tm)}>
+            <button key={tm} className="btn" onClick={() => makeEasiest(tm)}>
               🏆 {t.bracketMakeWin} {displayName(tm, mode)}
             </button>
           ))}
@@ -138,21 +160,25 @@ export function Bracket({ bracket, mode, focus }: Props) {
         {COLUMNS.map((col) => (
           <div className="bracket-col" key={col.key}>
             <h4>{t.rounds[col.key as keyof typeof t.rounds]}</h4>
-            {col.matches.map((m) => (
-              <div className="bracket-match" key={m}>
-                <Team m={m} team={results[m]?.home ?? null} />
-                <Team m={m} team={results[m]?.away ?? null} />
-              </div>
-            ))}
+            <div className="bracket-col-body">
+              {col.matches.map((m) => (
+                <div className="bracket-match" key={m}>
+                  <Team m={m} team={results[m]?.home ?? null} />
+                  <Team m={m} team={results[m]?.away ?? null} />
+                </div>
+              ))}
+            </div>
           </div>
         ))}
         <div className="bracket-col">
           <h4>{t.metrics.champ}</h4>
-          <div className="bracket-champion">
-            {flag(champion)} {champion ? displayName(champion, mode) : "—"}
-          </div>
-          <div className="subtle" style={{ textAlign: "center", fontSize: "0.7rem" }}>
-            {t.thirdPlace}: {flag(third)} {third ? displayName(third, mode) : "—"}
+          <div className="bracket-col-body" style={{ justifyContent: "center" }}>
+            <div className="bracket-champion">
+              {flag(champion)} {champion ? displayName(champion, mode) : "—"}
+            </div>
+            <div className="subtle" style={{ textAlign: "center", fontSize: "0.7rem", marginTop: "0.4rem" }}>
+              {t.thirdPlace}: {flag(third)} {third ? displayName(third, mode) : "—"}
+            </div>
           </div>
         </div>
       </div>
