@@ -178,7 +178,7 @@ export default function App() {
       <ModelPick snapshot={latest} mode={mode} />
 
       {bracket && bracket.r32.length > 0 && (
-        <Bracket bracket={bracket} mode={mode} />
+        <Bracket bracket={bracket} mode={mode} focus={focus} />
       )}
 
       {importance && <VitalMatches importance={importance} mode={mode} />}

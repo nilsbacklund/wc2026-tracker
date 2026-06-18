@@ -6,6 +6,7 @@ import { flag } from "../flags";
 interface Props {
   bracket: BracketData;
   mode: Mode;
+  focus: string[];
 }
 
 // Knockout tree (which two matches' winners feed each later match).
@@ -16,6 +17,13 @@ const FEEDERS: Record<number, [number, number]> = {
   101: [97, 98], 102: [99, 100],
   104: [101, 102],
 };
+
+// child match -> the match its winner feeds into (for walking a team's path).
+const PARENT: Record<number, number> = {};
+for (const [p, [a, b]] of Object.entries(FEEDERS)) {
+  PARENT[a] = Number(p);
+  PARENT[b] = Number(p);
+}
 
 // Column order chosen so each later match sits between its two feeders.
 const COLUMNS: { key: string; matches: number[] }[] = [
@@ -32,9 +40,28 @@ interface Resolved {
   winner: string | null;
 }
 
-export function Bracket({ bracket, mode }: Props) {
+export function Bracket({ bracket, mode, focus }: Props) {
   const t = STRINGS[mode];
   const [overrides, setOverrides] = useState<Record<number, string>>({});
+
+  // Force a team to win every match on its path to the title (opponents stay
+  // as the favorites) — the most-likely bracket in which that team wins.
+  const makeWin = (team: string) => {
+    const start = bracket.r32.find((r) => r.home === team || r.away === team);
+    if (!start) return;
+    const ov: Record<number, string> = {};
+    let m: number | undefined = start.match;
+    while (m != null) {
+      ov[m] = team;
+      m = PARENT[m];
+    }
+    setOverrides(ov);
+  };
+
+  // Focus teams that actually appear in the projected bracket.
+  const winnable = focus.filter((tm) =>
+    bracket.r32.some((r) => r.home === tm || r.away === tm),
+  );
 
   const { results, champion, third } = useMemo(() => {
     const elo = bracket.elo;
@@ -88,13 +115,20 @@ export function Bracket({ bracket, mode }: Props) {
 
   return (
     <section className="panel">
-      <h2 style={{ justifyContent: "space-between" }}>
+      <h2 style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
         <span>{t.bracketTitle}</span>
-        {Object.keys(overrides).length > 0 && (
-          <button className="btn" onClick={() => setOverrides({})}>
-            {t.scenarioReset}
-          </button>
-        )}
+        <span style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+          {winnable.map((tm) => (
+            <button key={tm} className="btn" onClick={() => makeWin(tm)}>
+              🏆 {t.bracketMakeWin} {displayName(tm, mode)}
+            </button>
+          ))}
+          {Object.keys(overrides).length > 0 && (
+            <button className="btn" onClick={() => setOverrides({})}>
+              {t.scenarioReset}
+            </button>
+          )}
+        </span>
       </h2>
       <p className="subtle" style={{ marginTop: 0 }}>
         {t.bracketIntro}
